@@ -135,7 +135,7 @@ foreach my $lib (@libArray) {
 	my $orf_file = $get_orfans->fetchrow_array();
 
 	#open orf file and get all ids.
-	my $fileLoc = "/diag/projects/virome/virome-cache-files/$options{pipelineid}/idFiles";
+	my $fileLoc = "/opt/projects/virome/virome-cache-files/$options{pipelineid}/idFiles";
 	open( ORF, "<", $fileLoc . "/" . $orf_file )
 	  or die("Could not open file $orf_file\n\n $fileLoc/$orf_file\n");
 

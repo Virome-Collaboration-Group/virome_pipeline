@@ -17,7 +17,7 @@ After cloning this repo I typically rename:
 
     mv virome_pipeline package_virome
 
-If this is the first time you've cloned this repository and you're going to set it up to work with ergatis, then there are several global variables and hard-coded file paths that need to be updated. These will be easy to spot as they will typically lead with "/diag/projects/virome".
+If this is the first time you've cloned this repository and you're going to set it up to work with ergatis, then there are several global variables and hard-coded file paths that need to be updated. These will be easy to spot as they will typically lead with "/opt/projects/virome".
 
 Overview of Contents
 --------------------

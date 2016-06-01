@@ -115,7 +115,7 @@ my $sffinfo_config = new Ergatis::ConfigFile(
                         -file => "$options{repository_root}/workflow/runtime/sffinfo/" . $pipeline->id . 
                                  "_default/sffinfo.default.user.config"
                       );
-   $sffinfo_config->setval( 'input', '$;INPUT_FILE$;', '/diag/projects/virome/user_metagenomes/QC/SMALLER_4476FREE.sff' );
+   $sffinfo_config->setval( 'input', '$;INPUT_FILE$;', '/opt/projects/virome/user_metagenomes/QC/SMALLER_4476FREE.sff' );
    $sffinfo_config->RewriteConfig();
 
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );

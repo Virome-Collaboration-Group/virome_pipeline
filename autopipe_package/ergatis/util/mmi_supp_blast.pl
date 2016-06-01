@@ -86,9 +86,9 @@ use Ergatis::SavedPipeline;
 
 use DBI;
 
-my $template_directory = "/diag/projects/virome/workflow/project_saved_templates/mmi_supp_blast";
-my $repository_root = "/diag/projects/virome/";
-my $id_repository = "/diag/projects/virome/workflow/project_id_repository/";
+my $template_directory = "/opt/projects/virome/workflow/project_saved_templates/mmi_supp_blast";
+my $repository_root = "/opt/projects/virome/";
+my $id_repository = "/opt/projects/virome/workflow/project_id_repository/";
 my $ergatis_ini = "/var/www/html/cgi/ergatis.ini";
 
 ##############################
@@ -121,7 +121,7 @@ my $sth_update = $dbh->prepare($update_sql);
 $sth_update->execute ($library_name);
 
 my $input_library_file = "/home/dnasko/mgol_reference_construction_feb2013/MMI_METAGENOME_ORFs/" . $library_name . ".filtered.cd-hit-454.pep";
-my $output_library_file = "/diag/projects/virome/mmi/uniref_supplementary/" . $library_name . ".virome.btab";
+my $output_library_file = "/opt/projects/virome/mmi/uniref_supplementary/" . $library_name . ".virome.btab";
 ##############################
 ## important bits here
 ##############################

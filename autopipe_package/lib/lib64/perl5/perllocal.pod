@@ -4,7 +4,7 @@
 
 =item *
 
-C<installed into: /diag/projects/virome/automated_pipeline_package/lib//share/perl5>
+C<installed into: /opt/projects/virome/automated_pipeline_package/lib//share/perl5>
 
 =item *
 

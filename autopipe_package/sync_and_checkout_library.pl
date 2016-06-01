@@ -17,7 +17,7 @@ use DBI;
 ###################################################################
 
 ## GLOBAL VARIABLES
-my $root = '/diag/projects/virome/automated_pipeline_package/';
+my $root = '/opt/projects/virome/automated_pipeline_package/';
 my $stderr_file = $root . 'logs/rsync.stderr';
 my $stderr_log = $root . 'logs/rsync.log';
 my $checkout_log = $root . 'logs/checkout.log';
@@ -25,14 +25,14 @@ my @RESULTS;
 my ($lib_name,$lib_user,$lib_env,$lib_server,$file_type,$lib_seqmethod,$virome_lib_id);
 my $available_database = '';
 my $instantiator_script = '';
-my $instant_dir = "/diag/projects/virome/automated_pipeline_package/ergatis/util/";
-my $template_directory = "/diag/projects/virome/workflow/project_saved_templates/";
-my $repository_root = "/diag/projects/virome/";
+my $instant_dir = "/opt/projects/virome/automated_pipeline_package/ergatis/util/";
+my $template_directory = "/opt/projects/virome/workflow/project_saved_templates/";
+my $repository_root = "/opt/projects/virome/";
 my $ergatis_ini = "/var/www/html/cgi/ergatis.ini";
-my $id_repository = "/diag/projects/virome/workflow/project_id_repository/";
+my $id_repository = "/opt/projects/virome/workflow/project_id_repository/";
 
 ## Perform the rsync with VIROME server at Delaware
-# print `rsync -zar --delete --exclude=/.* dnasko\@virome.dbi.udel.edu:/Volumes/sputnik/VIROME-USER-LIBRARIES/ /diag/projects/virome/user_metagenomes/ 2> $stderr_file`;
+# print `rsync -zar --delete --exclude=/.* dnasko\@virome.dbi.udel.edu:/Volumes/sputnik/VIROME-USER-LIBRARIES/ /opt/projects/virome/user_metagenomes/ 2> $stderr_file`;
 # my $stderr_size = -s $stderr_file;
 
 print " rsync complete . . .\n";
@@ -95,7 +95,7 @@ if ($available_database == 1 || $available_database == 2 || $available_database 
 	$sth_get->execute($next_library_id);                                ## Gather more information on that library
 	my ($lib_name,$lib_user,$lib_fileName,$sequences) = $sth_get->fetchrow_array();
 	print " library name: $lib_name\n library user: $lib_user\n lib filename = $lib_fileName\n";
-	$lib_fileName = "/diag/projects/virome/user_metagenomes" . $lib_fileName;
+	$lib_fileName = "/opt/projects/virome/user_metagenomes" . $lib_fileName;
 #       print "\n\n $available_database\t$lib_name\t$lib_user\t$lib_fileName\t$sequences\n\n";
 	$sth_lib->execute($lib_name,$lib_user);
 	while(@RESULTS = $sth_lib->fetchrow_array) {

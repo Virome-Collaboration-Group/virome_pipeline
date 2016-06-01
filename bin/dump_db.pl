@@ -121,7 +121,7 @@ Proc DB      = $processing_db
 # }
 # print "User      = $user\n";
 if ($processing_db =~ m/diag/) {
-    $root = "/diag/projects/virome/";
+    $root = "/opt/projects/virome/";
 }
 else {
     die "\n\n Cannot determine the root given the processing_db: $processing_db\n\n";
@@ -173,8 +173,8 @@ foreach my $table (@tables) {
 
 print `mkdir -p $outdir/../$prefix/xDocs`;
 print `mkdir -p $outdir/../$prefix/idFiles`;
-print `cp /diag/projects/virome/virome-cache-files/$pipelineid/xDocs/*_$library_id.xml $outdir/../$prefix/xDocs`;
-print `cp /diag/projects/virome/virome-cache-files/$pipelineid/idFiles/*_$library_id.txt $outdir/../$prefix/idFiles`;
+print `cp /opt/projects/virome/virome-cache-files/$pipelineid/xDocs/*_$library_id.xml $outdir/../$prefix/xDocs`;
+print `cp /opt/projects/virome/virome-cache-files/$pipelineid/idFiles/*_$library_id.txt $outdir/../$prefix/idFiles`;
 
 #####################################################################
 ## Print out the version control info to the version_info.txt file ##

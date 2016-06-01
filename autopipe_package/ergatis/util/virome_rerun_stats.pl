@@ -137,13 +137,13 @@ my $import_library_from_archive_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/import_library_from_archive/" . $pipeline->id . "_default/import_library_from_archive.default.user.config");
 $import_library_from_archive_config->setval( 'parameter', '$;LOCATION$;', "$database");
 $import_library_from_archive_config->RewriteConfig();
-$import_library_from_archive_config->setval( 'input', '$;INPUT_FILE$;', "/diag/projects/virome/output_repository/dump_db/$prefix" );
+$import_library_from_archive_config->setval( 'input', '$;INPUT_FILE$;', "/opt/projects/virome/output_repository/dump_db/$prefix" );
 $import_library_from_archive_config->RewriteConfig();
 
 ## clean_expand_btab.uniref
 my $clean_expand_btab_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/clean_expand_btab/" . $pipeline->id . "_uniref/clean_expand_btab.uniref.user.config");
-$clean_expand_btab_config->setval('input', '$;INPUT_FILE_LIST$;', "/diag/projects/virome/output_repository/btab2viromebtab/".$options{pipeline}."_uniref/btab2viromebtab.btab.list" );
+$clean_expand_btab_config->setval('input', '$;INPUT_FILE_LIST$;', "/opt/projects/virome/output_repository/btab2viromebtab/".$options{pipeline}."_uniref/btab2viromebtab.btab.list" );
 $clean_expand_btab_config->RewriteConfig();
 
 ## blast-result-prep.uniref
@@ -155,7 +155,7 @@ $blast_result_prep_config->RewriteConfig();
 ## concatenate_files.default
 my $concatenate_files_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/concatenate_files/" . $pipeline->id . "_default/concatenate_files.default.user.config");
-$concatenate_files_config->setval('input', '$;INPUT_FILE_LIST$;', "$options{repository_root}/output_repository/blast-result-prep/" . $pipeline->id . "_uniref/blast-result-prep.txt.list,/diag/projects/virome/output_repository/blast-result-prep/" . $options{pipeline} . "_mgol/blast-result-prep.txt.list" );
+$concatenate_files_config->setval('input', '$;INPUT_FILE_LIST$;', "$options{repository_root}/output_repository/blast-result-prep/" . $pipeline->id . "_uniref/blast-result-prep.txt.list,/opt/projects/virome/output_repository/blast-result-prep/" . $options{pipeline} . "_mgol/blast-result-prep.txt.list" );
 
 ## transfer_checkin
 my $transfer_checkin_config = new Ergatis::ConfigFile(

@@ -122,7 +122,7 @@ my %ValidPlatforms = ('illumina' => 1, '454' => 1, 'pacbio' => 1, 'ion torrent' 
 unless (exists $ValidPlatforms{$technology}) { die " Error: The sequencing technology provded is not valid: $technology\n\n"; }
 
 ## GLOBAL VARIABLES
-my $root = '/diag/projects/virome/automated_pipeline_package/';
+my $root = '/opt/projects/virome/automated_pipeline_package/';
 my $stderr_file = $root . 'logs/rsync.stderr';
 my $stderr_log = $root . 'logs/rsync.log';
 my $checkout_log = $root . 'logs/checkout.log';
@@ -131,18 +131,18 @@ my ($lib_name,$lib_user,$lib_env,$lib_server,$file_type,$lib_seqmethod,$virome_l
 $virome_lib_id=$id;
 my $available_database = '';
 my $instantiator_script = '';
-my $instant_dir = "/diag/projects/virome/automated_pipeline_package/ergatis/util/";
-my $template_directory = "/diag/projects/virome/workflow/project_saved_templates/";
-my $repository_root = "/diag/projects/virome/";
+my $instant_dir = "/opt/projects/virome/automated_pipeline_package/ergatis/util/";
+my $template_directory = "/opt/projects/virome/workflow/project_saved_templates/";
+my $repository_root = "/opt/projects/virome/";
 my $ergatis_ini = "/var/www/html/cgi/ergatis.ini";
-my $id_repository = "/diag/projects/virome/workflow/project_id_repository/";
+my $id_repository = "/opt/projects/virome/workflow/project_id_repository/";
 
 print " rsync'ing with sipho.dbi.udel.edu . . .\n";
 ## Perform the rsync with VIROME server at Delaware
-print `rsync -zar --delete --exclude=/.* sipho.dbi.udel.edu:/data/virome_user_libraries/ /diag/projects/virome/user_metagenomes/ 2> $stderr_file`;
+print `rsync -zar --delete --exclude=/.* sipho.dbi.udel.edu:/data/virome_user_libraries/ /opt/projects/virome/user_metagenomes/ 2> $stderr_file`;
 ## Alter permissions after
-print `for i in \`find /diag/projects/virome/user_metagenomes -type d -print\`; do chmod 775 \$i 2> /dev/null; chgrp virome \$i 2> /dev/null; done;`;
-print `for i in \`find /diag/projects/virome/user_metagenomes -type f  -print\`; do chmod 664 \$i 2> /dev/null; chgrp virome \$i 2> /dev/null; done;`;
+print `for i in \`find /opt/projects/virome/user_metagenomes -type d -print\`; do chmod 775 \$i 2> /dev/null; chgrp virome \$i 2> /dev/null; done;`;
+print `for i in \`find /opt/projects/virome/user_metagenomes -type f  -print\`; do chmod 664 \$i 2> /dev/null; chgrp virome \$i 2> /dev/null; done;`;
 
 # my $stderr_size = -s $stderr_file;
 print "\t[ rsync complete ]\n";
@@ -182,7 +182,7 @@ unless ($available_database == 1 || $available_database == 2 || $available_datab
 }
 else {
     $sth_update->execute($available_database);                          ## Check out that database
-    $filename = "/diag/projects/virome/user_metagenomes/" . $filename;
+    $filename = "/opt/projects/virome/user_metagenomes/" . $filename;
     # $sth_lib->execute($name,$username);
     # while(@RESULTS = $sth_lib->fetchrow_array) {
     # 	$virome_lib_id = $RESULTS[0];

@@ -10,7 +10,7 @@ analysis pipeline.
 USAGE: archiver_and_dumper.pl                                                                                                                                                                                                 
             --library_id=200                                                                                                                                                                                          
             --location=diag3
-            --repository_root=/diag/projects/virome
+            --repository_root=/opt/projects/virome
             --username=ewommack
             --pipeline=9E4C8FA05632
                                                                                                                                                                                                                                             

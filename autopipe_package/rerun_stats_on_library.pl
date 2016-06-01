@@ -10,7 +10,7 @@ rerun_stats_on_library.pl -- Rerun the stats scripts on a library that has a db_
 
 =head1 SYNOPSIS
 
- rerun_stats_on_library.pl --db=diag5 --lib_info=/diag/projects/virome/output_repository/db-load-libaray/EREAFD3241/db-load-librart.txt.list
+ rerun_stats_on_library.pl --db=diag5 --lib_info=/opt/projects/virome/output_repository/db-load-libaray/EREAFD3241/db-load-librart.txt.list
                      [--help] [--manual]
 
 =head1 DESCRIPTION
@@ -89,17 +89,17 @@ my $pipeline_id = $lib_info;
 $pipeline_id =~ s/.*db-load-library\///;
 $pipeline_id =~ s/_default.*//;
 $prefix = `cut -f3 $db_load_file`; chomp($prefix);
-print `rm /diag/projects/virome/output_repository/dump_db/$prefix/blastp.tab`;
-print `touch /diag/projects/virome/output_repository/dump_db/$prefix/blastp.tab`;
+print `rm /opt/projects/virome/output_repository/dump_db/$prefix/blastp.tab`;
+print `touch /opt/projects/virome/output_repository/dump_db/$prefix/blastp.tab`;
 
 ## GLOBAL VARIABLES
-my $root = '/diag/projects/virome/automated_pipeline_package/';
+my $root = '/opt/projects/virome/automated_pipeline_package/';
 my $instantiator_script = 'virome_rerun_stats.pl';
-my $instant_dir = "/diag/projects/virome/automated_pipeline_package/ergatis/util/";
-my $template_directory = "/diag/projects/virome/workflow/project_saved_templates/rerun_stats_scripts";
-my $repository_root = "/diag/projects/virome/";
+my $instant_dir = "/opt/projects/virome/automated_pipeline_package/ergatis/util/";
+my $template_directory = "/opt/projects/virome/workflow/project_saved_templates/rerun_stats_scripts";
+my $repository_root = "/opt/projects/virome/";
 my $ergatis_ini = "/var/www/html/cgi/ergatis.ini";
-my $id_repository = "/diag/projects/virome/workflow/project_id_repository/";
+my $id_repository = "/opt/projects/virome/workflow/project_id_repository/";
 
 
 ## INSTANTIATE AN ERGATIS PIPELINE

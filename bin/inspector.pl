@@ -10,7 +10,7 @@ to ensure everything is peachy.
 USAGE: inspector.pl                                                                                                                                                                                                 
             --library_id=200                                                                                                                                                                                         
             --proc_db_name=virome_processing3
-            --repository_root=/diag/projects/virome
+            --repository_root=/opt/projects/virome
                                                                                                                                                                                                                                             
                                                                                                                                                                                                                                             
 =head1 OPTIONS                                                                                                                                                                                                                              

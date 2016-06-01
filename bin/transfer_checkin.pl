@@ -98,7 +98,7 @@ $dbh->disconnect;
 
 print "User      = $user\n";
 if ($processing_db =~ m/diag/) {
-    $root = "/diag/projects/virome/";
+    $root = "/opt/projects/virome/";
 }
 else {
     die "\n\n Cannot determine the root given the processing_db: $processing_db\n\n";
@@ -107,8 +107,8 @@ else {
 #################################################################
 ## Secure copy the tar ball from dump_db to sipho.dbi.udel.edu ##
 #################################################################
-# print `scp /diag/projects/virome/output_repository/dump_db/$library_id.tar.gz dnasko@sipho.dbi.udel.edu:/data/diag_libraries`;
-print "ssh fnode1 scp /diag/projects/virome/output_repository/dump_db/$prefix.tar.gz biohen.dbi.udel.edu:/opt/virome";
+# print `scp /opt/projects/virome/output_repository/dump_db/$library_id.tar.gz dnasko@sipho.dbi.udel.edu:/data/diag_libraries`;
+print "ssh fnode1 scp /opt/projects/virome/output_repository/dump_db/$prefix.tar.gz biohen.dbi.udel.edu:/opt/virome";
 print "ssh fnode1 ssh biohen.dbi.udel.edu '/opt/virome/bin/virome-analysis-transfer.sh $prefix.tar.gz'";
 
 ###########################################################################

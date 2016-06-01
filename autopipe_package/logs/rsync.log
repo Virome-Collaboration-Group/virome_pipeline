@@ -632,44 +632,44 @@ Fri May  3 10:00:31 EDT 2013
 Could not create directory '/home/dnasko/.ssh'.
 Failed to add the host to the list of known hosts (/home/dnasko/.ssh/known_hosts).
 Fri Jun 21 18:17:39 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-06-21-15_42_18_despina/.VC_4_1007.CoupledReads.fa.x4GEbp" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-06-21-15_42_18_despina/.VC_4_1007.CoupledReads.fa.x4GEbp" -> "2013-06-21-15_42_18_despina/VC_4_1007.CoupledReads.fa": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-06-21-15_42_18_despina/.VC_4_1007.CoupledReads.fa.x4GEbp" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-06-21-15_42_18_despina/.VC_4_1007.CoupledReads.fa.x4GEbp" -> "2013-06-21-15_42_18_despina/VC_4_1007.CoupledReads.fa": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Thu Jun 27 14:18:19 EDT 2013
 rsync: connection unexpectedly closed (0 bytes received so far) [receiver]
 rsync error: unexplained error (code 255) at io.c(600) [receiver=3.0.6]
 Wed Jul  3 09:00:12 EDT 2013
 Wed Jul  3 09:00:12 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" -> "2013-07-03-06_20_59_rlim432/virus_orf_hits.fa": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" -> "2013-07-03-06_20_59_rlim432/virus_orf_hits.fa": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" -> "2013-07-03-06_20_59_rlim432/virus_orf_hits.fa": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-03-06_20_59_rlim432/.virus_orf_hits.fa.oQLk2m" -> "2013-07-03-06_20_59_rlim432/virus_orf_hits.fa": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Thu Jul  4 00:01:52 EDT 2013
 Thu Jul  4 00:01:52 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" -> "2013-07-03-21_25_29_rgilbert/AdditionalFormData.txt": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" -> "2013-07-03-21_25_29_rgilbert/AdditionalFormData.txt": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" -> "2013-07-03-21_25_29_rgilbert/AdditionalFormData.txt": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-03-21_25_29_rgilbert/.AdditionalFormData.txt.Soad4s" -> "2013-07-03-21_25_29_rgilbert/AdditionalFormData.txt": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Mon Jul  8 15:00:13 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-08-12_18_04_MikeDismar/.vBS.fna.I7Uq3q" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-08-12_18_04_MikeDismar/.vBS.fna.I7Uq3q" -> "2013-07-08-12_18_04_MikeDismar/vBS.fna": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-08-12_18_04_MikeDismar/.vBS.fna.I7Uq3q" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-08-12_18_04_MikeDismar/.vBS.fna.I7Uq3q" -> "2013-07-08-12_18_04_MikeDismar/vBS.fna": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Mon Jul  8 15:00:13 EDT 2013
 Tue Jul  9 06:00:45 EDT 2013
 Tue Jul  9 06:00:45 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" -> "2013-07-09-03_15_29_MikeDismar/vGB.fna": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" -> "2013-07-09-03_15_29_MikeDismar/vGB.fna": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" -> "2013-07-09-03_15_29_MikeDismar/vGB.fna": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-09-03_15_29_MikeDismar/.vGB.fna.0VgKHW" -> "2013-07-09-03_15_29_MikeDismar/vGB.fna": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Tue Jul 16 21:07:11 EDT 2013
-rsync: stat "/diag/projects/virome/user_metagenomes/2013-07-16-05_55_01_hkallen/.187_D2_RL01.fastq.Pl2iBw" failed: No such file or directory (2)
-rsync: rename "/diag/projects/virome/user_metagenomes/2013-07-16-05_55_01_hkallen/.187_D2_RL01.fastq.Pl2iBw" -> "2013-07-16-05_55_01_hkallen/187_D2_RL01.fastq": No such file or directory (2)
+rsync: stat "/opt/projects/virome/user_metagenomes/2013-07-16-05_55_01_hkallen/.187_D2_RL01.fastq.Pl2iBw" failed: No such file or directory (2)
+rsync: rename "/opt/projects/virome/user_metagenomes/2013-07-16-05_55_01_hkallen/.187_D2_RL01.fastq.Pl2iBw" -> "2013-07-16-05_55_01_hkallen/187_D2_RL01.fastq": No such file or directory (2)
 rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1505) [generator=3.0.6]
 Tue Jul 16 21:07:12 EDT 2013
 Wed Jul 31 12:01:01 EDT 2013

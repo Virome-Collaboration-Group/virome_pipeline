@@ -110,7 +110,7 @@ while (@row = $sth_select->fetchrow_array) {
 }
 print "User      = $user\n";
 if ($processing_db =~ m/diag/) {
-    $root = "/diag/projects/virome/";
+    $root = "/opt/projects/virome/";
 }
 else {
     die "\n\n Cannot determine the root given the processing_db: $processing_db\n\n";

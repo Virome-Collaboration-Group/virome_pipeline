@@ -49,7 +49,7 @@ This script is used to upload info into db.
     bjaysheel@gmail.com
 
 =cut
-use lib '/diag/projects/virome/package_virome/lib/perl5';
+use lib '/opt/package_virome/lib/perl5';
 
 use strict;
 use warnings;
