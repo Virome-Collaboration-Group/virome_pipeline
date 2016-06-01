@@ -108,17 +108,18 @@ else {
 ## Secure copy the tar ball from dump_db to sipho.dbi.udel.edu ##
 #################################################################
 # print `scp /diag/projects/virome/output_repository/dump_db/$library_id.tar.gz dnasko@sipho.dbi.udel.edu:/data/diag_libraries`;
-print `ssh fnode1 scp /diag/projects/virome/output_repository/dump_db/$prefix.tar.gz biohen.dbi.udel.edu:/opt/virome`;
-print `ssh fnode1 ssh biohen.dbi.udel.edu '/opt/virome/bin/virome-analysis-transfer.sh $prefix.tar.gz'`;
+print "ssh fnode1 scp /diag/projects/virome/output_repository/dump_db/$prefix.tar.gz biohen.dbi.udel.edu:/opt/virome";
+print "ssh fnode1 ssh biohen.dbi.udel.edu '/opt/virome/bin/virome-analysis-transfer.sh $prefix.tar.gz'";
 
 ###########################################################################
 ## Update the processing checkout table to check in the current database ##
 ###########################################################################
-$dbh = DBI->connect("DBI:mysql:database=".$db_name.";host=".$db_host, $db_user, $db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
-$processing_db =~ s/^diag//; ## need to do this for the SQL table.
-my $check_sql = qq/UPDATE processing_db_checkout SET status = "AVAILABLE" WHERE database_id = ?/;
-my $sth_check = $dbh->prepare($check_sql);
-$sth_check->execute ($processing_db);
-$dbh->disconnect;
+
+# $dbh = DBI->connect("DBI:mysql:database=".$db_name.";host=".$db_host, $db_user, $db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
+# $processing_db =~ s/^diag//; ## need to do this for the SQL table.
+# my $check_sql = qq/UPDATE processing_db_checkout SET status = "AVAILABLE" WHERE database_id = ?/;
+# my $sth_check = $dbh->prepare($check_sql);
+# $sth_check->execute ($processing_db);
+# $dbh->disconnect;
 
 exit 0;
