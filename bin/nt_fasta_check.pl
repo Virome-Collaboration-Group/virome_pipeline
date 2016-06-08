@@ -59,9 +59,9 @@ my %options = ();
 my $results = GetOptions (\%options,
                           'fasta|f=s',
                           'outdir|o=s',
-						  'libList|ll=s',
-						  'libFile|lf=s',
-						  'prefix|p=s',
+			  'libList|ll=s',
+			  'libFile|lf=s',
+			  'prefix|p=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
