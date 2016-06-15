@@ -141,23 +141,23 @@ $;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 $;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 
 [component ncbi-blastx]
-$;BLASTALL_EXEC$;=/opt/blast-2.2.25/bin/blastall
+$;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 
 [component ncbi-blastn_compress]
-$;BLASTALL_EXEC$;=/opt/blast-2.2.25/bin/blastall
+$;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 
 [component ncbi-tblastn]
-$;BLASTALL_EXEC$;=/opt/blast-2.2.25/bin/blastall
+$;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 
 [component ncbi-blastall]
-$;BLASTALL_EXEC$;=/opt/blast-2.2.25/bin/blastall
+$;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 
 [component open_reading_frames]
 
 [component panther]
 $;PANTHER_EXEC$;=/usr/local/devel/ANNOTATION/jorvis/opt/pantherScore1.0/pantherScore.pl
 $;PANTHER_HMM_LIBRARY$;=/usr/local/db/common/PANTHER6.0
-$;BLASTALL_EXEC$;=/opt/blast-2.2.25/bin/blastall
+$;BLASTALL_EXEC$;=/opt/blast/bin/blastall
 $;HMMSEARCH_EXEC$;=/usr/local/bin/hmmsearch
 $;GUNZIP_EXEC$;=/usr/bin/gunzip
 
@@ -246,7 +246,7 @@ $;TRF_EXEC$;=/usr/local/bin/trf
 
 [component tRNAscan-SE]
 $;TRNASCANSE_EXEC$;=/opt/tRNAscan-SE/bin/tRNAscan-SE
-
+$;TRNASCANSE_INSTALL$;=/opt/tRNAscan-SE
 [component tRNAscan-SE_compress]
 $;TRNASCANSE_EXEC$;=/usr/local/bin/tRNAscan-SE
 
@@ -438,6 +438,21 @@ $;BLAST2BTAB_EXEC$; = /opt/ergatis/package_virome/bin/wu-blast2btab
 $;VIROMEORF_PREP_EXEC$; = /opt/ergatis/package_virome/bin/viromeorf-prep
 
 ;;Nasko - Custom Components
+[component cluster_restrict_blast_parse]
+$;CLUSTER_RESTRICT_BLAST_PARSE$;=/opt/package_virome/bin/cluster_restrict_blast_parse
+
+[component split_btab]
+$;SPLITBTAB$;=/opt/package_virome/bin/split_btab
+
+[component btab2viromebtab]
+$;BTAB2VIROMEBTAB$;=/opt/package_virome/bin/btab2viromebtab
+
+[component concatenate_files]
+$;CONCATENATE_FILES$;=/opt/package_virome/bin/concatenate_files
+
+[component publish_checkin]
+$;PUBLISH_CHECKIN$;=/opt/package_virome/bin/publish_checkin
+
 [component fastq2fastaqual]
 $;FASTQ2FASTAQUAL$;=/opt/package_virome/bin/fastq2fastaqual
 
@@ -465,8 +480,26 @@ $;UPDATE_QUALITY_SCORES$;=/opt/ergatis/package_virome/bin/updateQualityFile
 [component archive_virome_pipeline]
 $;ARCHIVE_VIROME_PIPELINE$;=/opt/package_virome/bin/archive_virome_pipeline
 
-[component ncbi-blast-2.2.26]
-$;BLASTP2226_EXEC$;=/home/dnasko/software/ncbi-blast-2.2.26+/bin/blastp
+[component ncbi-blastp-plus]
+$;BLASTP2226_EXEC$;=/opt/package_virome/software/ncbi-blast-2.2.28+/bin/blastp
+
+[component ncbi-blastp-plus-fast]
+$;BLASTP23_EXEC$;=/opt/projects/virome/software/ncbi-blast-2.3.0+-src/bin/blastp
+
+[component ncbi-blastn-plus]
+$;BLASTN2226_EXEC$;=/opt/package_virome/software/ncbi-blast-2.2.28+/bin/blastn
+
+[component reset_db]
+$;RESET_DB$;=/opt/package_virome/bin/reset_db
+
+[component dump_db]
+$;DUMP_DB$;=/opt/package_virome/bin/dump_db
+
+[component transfer_checkin]
+$;TRANSFER_CHECKIN$;=/opt/package_virome/bin/transfer_checkin
+
+[component import_library_from_archive]
+$;IMPORT_LIBRARY_FROM_ARCHIVE$;=/opt/package_virome/bin/import_library_from_archive
 
 ;;Khaleel - Custom Components
 [component kmer_freq]
