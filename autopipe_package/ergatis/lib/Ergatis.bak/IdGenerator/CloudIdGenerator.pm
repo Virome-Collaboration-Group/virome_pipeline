@@ -1,9 +1,9 @@
-package Ergatis::IdGenerator::IGSIdGenerator;
+package Ergatis::IdGenerator::CloudIdGenerator;
 @ISA = qw(Ergatis::IdGenerator);
 
 =head1 NAME
 
-IdGenerator.pm - A module for creating unique feature or pipeline IDs.
+CloudIdGenerator.pm - A module for creating unique feature or pipeline IDs.
 
 =head1 SYNOPSIS
 
@@ -145,8 +145,8 @@ if they may give a performance advantage.
 
 =head1 AUTHOR
 
-    Kevin Galens
-    kgalens@som.umaryland.edu
+    Joshua Orvis
+    jorvis@tigr.org
 
 =cut
 
@@ -154,7 +154,7 @@ use strict;
 use warnings;
 use Carp;
 use Sys::Hostname;
-use IGS::MysqlUIDGenerator;
+use POSIX;
 
 $|++;
 
@@ -165,7 +165,7 @@ umask(0000);
 
     my %_attributes = (
                         id_repository           => undef,
-                        logging                 => 0,
+                        logging                 => 1,
                         log_dir                 => undef,
                         _id_pending             => undef,
                         _id_repository_checked  => 0,
@@ -178,12 +178,17 @@ umask(0000);
     ## class variables
     my $host = hostname();
 
-    ## id service
-    my $id_service;
+    ## workaround Perl's F_SETLKW bug
+    my $f_setlk = 6;
+    my $f_setlkw = 7;
 
     sub new {
         my ($class, %args) = @_;
 
+        ## make sure that the OS is linux (no support for other OS's)
+        croak "IdGenerator currently only supports Linux"
+            if $^O !~ /linux/;
+        
         ## create the object
         my $self = bless { %_attributes }, $class;
         
@@ -199,7 +204,7 @@ umask(0000);
         
         ## id_repository is required
         #   don't check it until the first next_id call
-        if ($self->logging && ! defined $args{id_repository} ) {
+        if ( ! defined $args{id_repository} ) {
             croak ("id_repository is a required argument for the constructor");
         }
         
@@ -211,25 +216,35 @@ umask(0000);
         ## if we are logging, create a file
         if ($self->logging) {
             ## make sure the log directory exists (if we're logging)
-            if(! -d $self->log_dir() ) {
-                mkdir($self->log_dir(), 0777);
+            my $loop = 1;
+            while( $loop ) {
+                select(undef, undef, undef, 0.3) if( $loop > 1 );
+                if(! -d $self->log_dir() ) {
+                    croak ("Can't create log_dir (".$self->log_dir()."): $!") if( $loop >= 5 );
+                    $loop++;
+                    mkdir($self->log_dir(), 0777) || next;
+                }
+                $loop = 0;
             }
 
             ## make sure the host subdir exists
-            if (! -d $self->log_dir() . "/$host") {
-                mkdir($self->log_dir() . "/$host", 0777);
+            $loop = 1;
+            while( $loop ) {
+                select(undef, undef, undef, 0.3) if( $loop > 1 );
+                if (! -d $self->log_dir() . "/$host") {
+                    if( $loop >= 5 ) {
+                        croak("Can't create log subdir (".$self->log_dir()."/$host )");
+                    }
+                    $loop++;
+                    mkdir($self->log_dir() . "/$host", 0777) || next;
+                }
+                $loop = 0;
             }
 
             open (my $fh, ">>" . $self->log_dir() . "/$host/$$.log") || croak ("can't create log file: $!");
             print $fh "info: starting IdGenerator log for process $$\n";
             $self->{_logfh} = $fh;
         }
-       
-        ## use EUIDService
-        $id_service = new IGS::MysqlUIDGenerator;
-        #unless ($id_service->ping()) {
-        #    croak "Can't contact GUID service";
-        #}
         
         return $self;
     }
@@ -252,6 +267,7 @@ umask(0000);
     sub next_id {
         my ($self, %args) = @_;
         my $current_num = undef;
+        my $idfh;  ## filehandle for the ID file
 
         ## check some required arguments
         $args{type} || croak "type is a required argument for the next_id method";
@@ -263,15 +279,87 @@ umask(0000);
         }
         
         ## has the id_repository been checked? (jay requested this not be in the constructor)
-        if ( $self->logging && ! $self->{_id_repository_checked} ) {
+        unless ( $self->{_id_repository_checked} ) {
             $self->_check_id_repository();
         }
         
         ## get ID
         
         ## from pool
-        $current_num = $id_service->get_next_id();
+        if ( defined $self->{_pools}->{ $args{type} } && scalar @{ $self->{_pools}->{ $args{type} } } ) {
+            $current_num = shift @{ $self->{_pools}->{$args{type}} };
         
+        ## from file system (refresh pool if necessary)
+        } else {
+            ## we need to trap interrupts here so we don't leave the ID file in a *bad* state
+            #   i'm doing it locally so in order to minimize messing with any signal trapping the
+            #   the calling script may have.
+            # sub mymethod { local $SIG{INT} = sub { int-like-stuff }; ... rest of method ... }
+            local $SIG{INT} = sub {
+                ## if a lock is open and we have a truncated ID file, we need to write the
+                #   pending ID.
+                if ( defined $self->{_id_pending} ) {
+                        sysseek($self->{_fh}, 0, 0);
+                        syswrite($self->{_fh}, $self->{_id_pending});
+                        close $self->{_fh};
+                }
+                
+                ## if a lock is open, close it
+                $self->_unlock();
+                
+                croak("caught SIGINT. idgen process interrupted");
+            };
+        
+        my $id_file = "$self->{id_repository}/next.$args{type}.id";
+        sysopen($self->{_fh}, $id_file, O_RDWR|O_CREAT) ||
+            croak("failed to initialize file $id_file");
+        $self->_lock();
+
+        sysseek($self->{_fh}, 0, 0);
+        sysread($self->{_fh}, $current_num, 100);
+        $current_num = 1 if !$current_num;
+        chomp $current_num;
+
+        my $id_to_set;
+
+            ## do we have a pool to refresh?
+        if ( defined $self->{_pool_sizes}->{ $args{type} } ) {
+            my $pool_size = $self->{_pool_sizes}->{ $args{type} };
+            $id_to_set = $current_num + $pool_size;
+
+                    ## reload the pool
+            if ( $pool_size > 1 ) {
+                for ( 1 .. ($pool_size - 1) ) {
+                    push @{ $self->{_pools}->{$args{type}} },
+                     $_ + $current_num;
+                }
+            }
+        } else {
+            $id_to_set = $current_num + 1;
+        }
+                
+        ## set next id, close
+        $self->{_id_pending} = $id_to_set;
+        sysseek($self->{_fh}, 0, 0);
+        syswrite($self->{_fh}, $id_to_set);
+
+        $self->{_id_pending} = undef;
+        $self->_unlock();
+        close $self->{_fh};
+        undef $self->{_fh};
+
+    }
+	#Distributed job token
+	my $jobtoken;
+	if(defined $ENV{'htc_id'}){
+	    $jobtoken = $ENV{'htc_id'};
+	}
+	else{
+	    $jobtoken = $$;
+	}
+	#Unique cloud token
+	my $cloudtoken='';
+
         ## format and return the id we got
         ## if type is pipeline we just return the numerical portion.
         if ( $args{type} eq 'pipeline' ) {
@@ -279,25 +367,11 @@ umask(0000);
             return $current_num;
         } else {
             $self->_log("info: got ID $args{project}.$args{type}.$current_num.$args{version}");
-            return "$args{project}.$args{type}.$current_num.$args{version}";
+            return "$args{project}.$args{type}.$cloudtoken".'X'."$jobtoken".'X'."$current_num.$args{version}";
         }
         
     }  ## end next_id method block
 
-
-    ## get next raw GUID
-    sub next_guid {
-        my ($self, %args) = @_;
-        my $current_num = undef;
-
-        $current_num = $id_service->get_next_id();
-
-        $self->_log("info: got GUID $current_num");
-        
-        return $current_num;
-    
-    }
-    
     sub set_pool_size {
         my ($self, %args) = @_;
         
@@ -314,15 +388,6 @@ umask(0000);
             
             $self->_log("info: setting pool size for type $type to $args{$type}");
             $self->{_pool_sizes}->{$type} = $args{$type};
-        }
-
-        ## get total id block size and set new size if bigger than current
-        my $new_size = 0;
-        foreach my $val(values(%{$self->{_pool_sizes}})) {
-            $new_size += $val;
-        }
-        if ($new_size > $id_service->get_batch_size) {
-            $id_service->set_batch_size($new_size);
         }
     }
 
@@ -350,6 +415,22 @@ umask(0000);
         if ($self->logging) {
             print $logfh "$msg\n";
         }
+    }
+
+    sub _lock
+    {
+        my $self = shift;
+        my $fl = pack("s! s! l! l! i", F_WRLCK, SEEK_SET, 0, 0, $$);
+        fcntl($self->{_fh}, $f_setlkw, $fl) ||
+            die "Error locking file: $!";
+    }
+
+    sub _unlock
+    {
+        my $self = shift;
+        my $fl = pack("s! s! l! l! i", F_UNLCK, SEEK_SET, 0, 0, $$);
+        fcntl($self->{_fh}, $f_setlk, $fl) ||
+            die "Error unlocking file: $!";
     }
 }
 

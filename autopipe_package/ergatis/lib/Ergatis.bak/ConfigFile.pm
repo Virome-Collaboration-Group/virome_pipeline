@@ -132,24 +132,23 @@ sub import_form_data {
 }
 
 ## Merge two config objects.
+## Currently only supports adding non-existing sections and will not
+## overwrite or try to update an existing section
 sub merge_configs {
     my ($self, $cfg_secondary) = @_;
 
     for my $section ( $cfg_secondary->Sections() ) {
         ## Skip any duplicate sections we find
         if ( $self->SectionExists($section) ) {
-            warn "Section $section already exists";
-        } else {
-            $self->AddSection($section);
+            warn "Skipping section $section because it is a duplicate.";
+            next;
         }
         
-        foreach my $parameter ( $cfg_secondary->Parameters($section) ) {
-            if ($self->val($section, $parameter, 0)) {
-                warn "Parameter $parameter already exists; skipping it!";
-            } else {
-                $self->newval($section, $parameter, 
-                              $cfg_secondary->val($section, $parameter));
-            }
+        $self->AddSection($section);
+
+        for my $parameter ( $cfg_secondary->Parameters($section) ) {
+            $self->newval($section, $parameter, 
+                          $cfg_secondary->val($section, $parameter));
         }
     }
 }

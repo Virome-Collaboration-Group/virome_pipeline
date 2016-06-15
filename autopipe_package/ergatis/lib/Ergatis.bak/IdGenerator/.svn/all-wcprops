@@ -1,7 +1,7 @@
 K 25
 svn:wc:ra_dav:version-url
 V 60
-/svnroot/ergatis/!svn/ver/8014/trunk/lib/Ergatis/IdGenerator
+/svnroot/ergatis/!svn/ver/7421/trunk/lib/Ergatis/IdGenerator
 END
 RandomIdGenerator.pm
 K 25
@@ -19,7 +19,7 @@ IGSIdGenerator.pm
 K 25
 svn:wc:ra_dav:version-url
 V 78
-/svnroot/ergatis/!svn/ver/8014/trunk/lib/Ergatis/IdGenerator/IGSIdGenerator.pm
+/svnroot/ergatis/!svn/ver/6050/trunk/lib/Ergatis/IdGenerator/IGSIdGenerator.pm
 END
 DefaultIdGenerator.pm
 K 25

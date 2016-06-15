@@ -1,4 +1,4 @@
-package Ergatis::IdGenerator::IGSIdGenerator;
+package Ergatis::IdGenerator::JCVIIdGenerator;
 @ISA = qw(Ergatis::IdGenerator);
 
 =head1 NAME
@@ -145,8 +145,8 @@ if they may give a performance advantage.
 
 =head1 AUTHOR
 
-    Kevin Galens
-    kgalens@som.umaryland.edu
+    Joshua Orvis
+    jorvis@tigr.org
 
 =cut
 
@@ -154,7 +154,7 @@ use strict;
 use warnings;
 use Carp;
 use Sys::Hostname;
-use IGS::MysqlUIDGenerator;
+use TIGR::EUIDService;
 
 $|++;
 
@@ -165,7 +165,7 @@ umask(0000);
 
     my %_attributes = (
                         id_repository           => undef,
-                        logging                 => 0,
+                        logging                 => 1,
                         log_dir                 => undef,
                         _id_pending             => undef,
                         _id_repository_checked  => 0,
@@ -226,10 +226,10 @@ umask(0000);
         }
        
         ## use EUIDService
-        $id_service = new IGS::MysqlUIDGenerator;
-        #unless ($id_service->ping()) {
-        #    croak "Can't contact GUID service";
-        #}
+        $id_service = new TIGR::EUIDService;
+        unless ($id_service->ping()) {
+            croak "Can't contact GUID service";
+        }
         
         return $self;
     }
@@ -270,7 +270,7 @@ umask(0000);
         ## get ID
         
         ## from pool
-        $current_num = $id_service->get_next_id();
+        $current_num = $id_service->getEUID();
         
         ## format and return the id we got
         ## if type is pipeline we just return the numerical portion.
@@ -290,7 +290,7 @@ umask(0000);
         my ($self, %args) = @_;
         my $current_num = undef;
 
-        $current_num = $id_service->get_next_id();
+        $current_num = $id_service->getEUID();
 
         $self->_log("info: got GUID $current_num");
         
@@ -321,8 +321,8 @@ umask(0000);
         foreach my $val(values(%{$self->{_pool_sizes}})) {
             $new_size += $val;
         }
-        if ($new_size > $id_service->get_batch_size) {
-            $id_service->set_batch_size($new_size);
+        if ($new_size > $id_service->{'block_size'}) {
+            $id_service->setBlockSize($new_size);
         }
     }
 

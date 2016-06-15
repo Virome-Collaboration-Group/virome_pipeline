@@ -1,9 +1,9 @@
-package Ergatis::IdGenerator::IGSIdGenerator;
+package Ergatis::IdGenerator::RandomIdGenerator;
 @ISA = qw(Ergatis::IdGenerator);
 
 =head1 NAME
 
-IdGenerator.pm - A module for creating unique feature or pipeline IDs.
+RandomIdGenerator.pm - A module for creating unique feature or pipeline IDs.
 
 =head1 SYNOPSIS
 
@@ -23,10 +23,16 @@ IdGenerator.pm - A module for creating unique feature or pipeline IDs.
     
 =head1 DESCRIPTION
 
-This is a module for creating unique pipeline/feature IDs for Ergatis.  It works
-based on an incremented file method designed to handle simultaneous ID requests 
-from multiple processes, users and hosts over NFS.  The module currently uses
-the File::NFSLock module.
+This is a module for creating unique pipeline/feature IDs for Ergatis. It works 
+via two methods depending on the type of ID requested.
+
+Pipeline ID - If a pipeline ID is requested a unique ID is generted using the 
+              Data::UUID module. This ID will be totally random as prevent users
+              from guessing pipeline ID's that they may not have access too.
+
+Feature ID - Works based on an incremented file method designed to handle simultaneous 
+             ID requests from multiple processes, users and hosts over NFS.  The module 
+             currently uses the File::NFSLock module.
 
 =head1 METHODS
 
@@ -145,8 +151,11 @@ if they may give a performance advantage.
 
 =head1 AUTHOR
 
-    Kevin Galens
-    kgalens@som.umaryland.edu
+    Joshua Orvis
+    jorvis@tigr.org
+
+    Cesar Arze
+    carze@som.umaryland.edu
 
 =cut
 
@@ -154,7 +163,8 @@ use strict;
 use warnings;
 use Carp;
 use Sys::Hostname;
-use IGS::MysqlUIDGenerator;
+use POSIX;
+use Data::UUID;
 
 $|++;
 
@@ -165,7 +175,7 @@ umask(0000);
 
     my %_attributes = (
                         id_repository           => undef,
-                        logging                 => 0,
+                        logging                 => 1,
                         log_dir                 => undef,
                         _id_pending             => undef,
                         _id_repository_checked  => 0,
@@ -173,17 +183,23 @@ umask(0000);
                         _logfh                  => undef,
                         _pool_sizes             => undef,  # will be hashref
                         _pools                  => undef,  # will be hashref
+                        _uuid_generator         => undef, 
                       );
 
     ## class variables
     my $host = hostname();
 
-    ## id service
-    my $id_service;
+    ## workaround Perl's F_SETLKW bug
+    my $f_setlk = 6;
+    my $f_setlkw = 7;
 
     sub new {
         my ($class, %args) = @_;
 
+        ## make sure that the OS is linux (no support for other OS's)
+        croak "IdGenerator currently only supports Linux"
+            if $^O !~ /linux/;
+        
         ## create the object
         my $self = bless { %_attributes }, $class;
         
@@ -197,9 +213,12 @@ umask(0000);
             }
         }
         
+        ## instantiate a Data::UUID generator for use in generating pipeline ID's
+        $self->{_uuid_generator} = new Data::UUID;
+
         ## id_repository is required
         #   don't check it until the first next_id call
-        if ($self->logging && ! defined $args{id_repository} ) {
+        if ( ! defined $args{id_repository} ) {
             croak ("id_repository is a required argument for the constructor");
         }
         
@@ -211,25 +230,36 @@ umask(0000);
         ## if we are logging, create a file
         if ($self->logging) {
             ## make sure the log directory exists (if we're logging)
-            if(! -d $self->log_dir() ) {
-                mkdir($self->log_dir(), 0777);
+            my $loop = 1;
+            while( $loop ) {
+                select(undef, undef, undef, 0.3) if( $loop > 1 );
+                if(! -d $self->log_dir() ) {
+                    croak ("Can't create log_dir (".$self->log_dir()."): $!") if( $loop >= 5 );
+                    $loop++;
+                    mkdir($self->log_dir(), 0777) || next;
+                }
+                $loop = 0;
             }
 
             ## make sure the host subdir exists
-            if (! -d $self->log_dir() . "/$host") {
-                mkdir($self->log_dir() . "/$host", 0777);
+            $loop = 1;
+            while( $loop ) {
+                select(undef, undef, undef, 0.3) if( $loop > 1 );
+                if (! -d $self->log_dir() . "/$host") {
+                    if( $loop >= 5 ) {
+                        croak("Can't create log subdir (".$self->log_dir()."/$host )");
+                    }
+                    $loop++;
+                    mkdir($self->log_dir() . "/$host", 0777) || next;
+                }
+                $loop = 0;
             }
 
             open (my $fh, ">>" . $self->log_dir() . "/$host/$$.log") || croak ("can't create log file: $!");
             print $fh "info: starting IdGenerator log for process $$\n";
             $self->{_logfh} = $fh;
+
         }
-       
-        ## use EUIDService
-        $id_service = new IGS::MysqlUIDGenerator;
-        #unless ($id_service->ping()) {
-        #    croak "Can't contact GUID service";
-        #}
         
         return $self;
     }
@@ -252,6 +282,7 @@ umask(0000);
     sub next_id {
         my ($self, %args) = @_;
         my $current_num = undef;
+        my $idfh;  ## filehandle for the ID file
 
         ## check some required arguments
         $args{type} || croak "type is a required argument for the next_id method";
@@ -263,15 +294,94 @@ umask(0000);
         }
         
         ## has the id_repository been checked? (jay requested this not be in the constructor)
-        if ( $self->logging && ! $self->{_id_repository_checked} ) {
+        unless ( $self->{_id_repository_checked} ) {
             $self->_check_id_repository();
         }
         
         ## get ID
         
         ## from pool
-        $current_num = $id_service->get_next_id();
+        if ( defined $self->{_pools}->{ $args{type} } && scalar @{ $self->{_pools}->{ $args{type} } } ) {
+            $current_num = shift @{ $self->{_pools}->{$args{type}} };
         
+        ## from file system (refresh pool if necessary)
+        } else {
+            ## if we are generating an ID for a pipeline we want to generate 
+            ## our ID making use of Data::UUID
+            if ($args{type} eq 'pipeline') {
+                $current_num = $self->_generate_UUID();
+
+                ## refresh pool if needed
+                if ( defined $self->{_pool_sizes}->{ $args{type} } ) {
+                    my $pool_size = $self->{_pool_sizes}->{ $args{type} };
+                    
+                    if ( $pool_size > 1 ) {
+                        for ( 1 .. ($pool_size - 1) ) {
+                            push @{ $self->{_pools}->{$args{type}} },
+                                $self->_generate_UUID();
+                        }
+                    }
+                } 
+            } else {
+                ## we need to trap interrupts here so we don't leave the ID file in a *bad* state
+                #   i'm doing it locally so in order to minimize messing with any signal trapping the
+                #   the calling script may have.
+                # sub mymethod { local $SIG{INT} = sub { int-like-stuff }; ... rest of method ... }
+                local $SIG{INT} = sub {
+                    ## if a lock is open and we have a truncated ID file, we need to write the
+                    #   pending ID.
+                    if ( defined $self->{_id_pending} ) {
+                            sysseek($self->{_fh}, 0, 0);
+                            syswrite($self->{_fh}, $self->{_id_pending});
+                            close $self->{_fh};
+                    }
+                    
+                    ## if a lock is open, close it
+                    $self->_unlock();
+                    
+                    croak("caught SIGINT. idgen process interrupted");
+                };
+            
+                my $id_file = "$self->{id_repository}/next.$args{type}.id";
+                sysopen($self->{_fh}, $id_file, O_RDWR|O_CREAT) ||
+                    croak("failed to initialize file $id_file");
+                $self->_lock();
+
+                sysseek($self->{_fh}, 0, 0);
+                sysread($self->{_fh}, $current_num, 100);
+                $current_num = 1 if !$current_num;
+                chomp $current_num;
+
+                my $id_to_set;
+
+                    ## do we have a pool to refresh?
+                if ( defined $self->{_pool_sizes}->{ $args{type} } ) {
+                    my $pool_size = $self->{_pool_sizes}->{ $args{type} };
+                    $id_to_set = $current_num + $pool_size;
+
+                            ## reload the pool
+                    if ( $pool_size > 1 ) {
+                        for ( 1 .. ($pool_size - 1) ) {
+                            push @{ $self->{_pools}->{$args{type}} },
+                             $_ + $current_num;
+                        }
+                    }
+                } else {
+                    $id_to_set = $current_num + 1;
+                }
+                        
+                ## set next id, close
+                $self->{_id_pending} = $id_to_set;
+                sysseek($self->{_fh}, 0, 0);
+                syswrite($self->{_fh}, $id_to_set);
+
+                $self->{_id_pending} = undef;
+                $self->_unlock();
+                close $self->{_fh};
+                undef $self->{_fh};
+            }
+        }
+
         ## format and return the id we got
         ## if type is pipeline we just return the numerical portion.
         if ( $args{type} eq 'pipeline' ) {
@@ -284,20 +394,6 @@ umask(0000);
         
     }  ## end next_id method block
 
-
-    ## get next raw GUID
-    sub next_guid {
-        my ($self, %args) = @_;
-        my $current_num = undef;
-
-        $current_num = $id_service->get_next_id();
-
-        $self->_log("info: got GUID $current_num");
-        
-        return $current_num;
-    
-    }
-    
     sub set_pool_size {
         my ($self, %args) = @_;
         
@@ -314,15 +410,6 @@ umask(0000);
             
             $self->_log("info: setting pool size for type $type to $args{$type}");
             $self->{_pool_sizes}->{$type} = $args{$type};
-        }
-
-        ## get total id block size and set new size if bigger than current
-        my $new_size = 0;
-        foreach my $val(values(%{$self->{_pool_sizes}})) {
-            $new_size += $val;
-        }
-        if ($new_size > $id_service->get_batch_size) {
-            $id_service->set_batch_size($new_size);
         }
     }
 
@@ -341,6 +428,76 @@ umask(0000);
         $self->{_id_repository_checked} = 1;
     }
     
+    sub _generate_UUID {
+        my $self = shift;
+
+        my $uuid = $self->{_uuid_generator}->create_str();
+        $uuid = $self->_format_uuid($uuid);
+
+        ## Check if our ID is unique and continue to generate new ID's 
+        ## until we reach a unique ID.
+        while ( ! $self->_check_uuid_uniqueness($uuid) ) {
+            print STDERR "UUID $uuid is not unique; generating new UUID\n";
+            $uuid = $self->{_uuid_generator}->create_str();
+            $uuid = $self->_format_uuid($uuid);
+        }
+
+        return $uuid;
+    }
+
+    sub _format_uuid {
+        my ($self, $uuid) = @_;
+        $uuid =~ s/-//g;
+        $uuid = substr($uuid, 0, 12);
+        return $uuid;
+    }
+
+    sub _check_uuid_uniqueness {
+        my ($self, $uuid) = @_;
+        my $is_unique = 1;
+
+        ## we want to look up our global ID repository to see if this pipeline
+        ## exists prior to generating an ID.
+        my $global_id_repo = $self->{'id_repository'};
+        my $id_lookup = "$global_id_repo/global_id_lookup";
+
+        if (! -d $id_lookup) {
+            mkdir($id_lookup, 0777) || die "Could not create global ID lookup folder: $!";
+        }
+
+        my $id_file_subdirectory = "$id_lookup/" . substr($uuid, 0, 1) . "/" . substr($uuid, 1, 1);
+        if (! -d $id_file_subdirectory) {
+            #mkpath([$id_file_subdirectory, 1, 0777]) || die "Could not create uuid $uuid subdirectory $id_file_subdirectory: $!";
+            $self->_run_system_cmd("mkdir -p $id_file_subdirectory");
+        }
+
+        ## Check if our pipeline ID exists in our global lookup, if it does not
+        ## create a new pipeline file as we will be using this ID.
+        if (-e "$id_file_subdirectory/$uuid.id") {
+            $is_unique = 0;
+        } else {
+            ## TODO: find a cleaner way of touching this file.
+            $self->_run_system_cmd("touch $id_file_subdirectory/$uuid.id");
+        }
+
+        return $is_unique;
+    }
+
+    sub _run_system_cmd {
+        my ($self, $cmd) = @_;
+        my @cmd_output;
+
+        eval {
+            @cmd_output = qx{$cmd 2>&1};
+            if ( ($? << 8) != 0 ) { 
+                die "@cmd_output";
+            }   
+        };  
+        if ($@) {
+            die "Error executing command $cmd: $@";
+        }   
+    }
+
     sub _log {
         my ($self, $msg) = @_;
         
@@ -350,6 +507,22 @@ umask(0000);
         if ($self->logging) {
             print $logfh "$msg\n";
         }
+    }
+
+    sub _lock
+    {
+        my $self = shift;
+        my $fl = pack("s! s! l! l! i", F_WRLCK, SEEK_SET, 0, 0, $$);
+        fcntl($self->{_fh}, $f_setlkw, $fl) ||
+            die "Error locking file: $!";
+    }
+
+    sub _unlock
+    {
+        my $self = shift;
+        my $fl = pack("s! s! l! l! i", F_UNLCK, SEEK_SET, 0, 0, $$);
+        fcntl($self->{_fh}, $f_setlk, $fl) ||
+            die "Error unlocking file: $!";
     }
 }
 

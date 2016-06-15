@@ -176,17 +176,11 @@ umask(0000);
                     $runprefix = $args{ergatis_cfg}->val('grid', 'sge_qsub') . " -V -wd $run_dir -b y";
                     
                     my $pipe_submission_queue = $args{ergatis_cfg}->val('workflow_settings', 'pipeline_submission_queue' );
-                    my $pipe_submission_queue_memory = $args{ergatis_cfg}->val('workflow_settings', 'submit_queue_memory' );
                     
                     if ( $pipe_submission_queue ) {
                         $runprefix .= " -q $pipe_submission_queue";
                     }
                     
-		    # If the memory has been specified add that line
-                    if ( $pipe_submission_queue_memory ) {
-                        $runprefix .= " -l mem_free=$pipe_submission_queue_memory";
-                    }
-
                     my $pipe_submission_project = $args{ergatis_cfg}->val('workflow_settings', 'pipeline_submission_project' );
                     
                     if ( $pipe_submission_project ) {
@@ -223,15 +217,14 @@ umask(0000);
                         print $pipeline_fh "unset $env\n";
                         next;
                     }
-		
-	
+
                     ## don't do HTTP_ variables
                     next if $env =~ /^HTTP_/;
                     
                     print $pipeline_fh "export $env=\"$ENV{$env}\"\n";
                     print $debugfh "ENV $env=\"$ENV{$env}\"\n" if $self->{debug};
                 }
-        	print $pipeline_fh "\nenv > /diag/scratch/anup/pipeline.env";        
+                
                 print $pipeline_fh "\n$sudo_prefix $runprefix $runstring";
                 
                 close $pipeline_fh;
@@ -291,15 +284,10 @@ umask(0000);
             if ($k =~ /^SERVER_/ ) {
                 delete $ENV{$k};
             }
-
-            if ($k =~ /^BASH_FUNC_module/ ) {
-                delete $ENV{$k};
-            }
         }
 
-        ## these variable seemed to have been causing SGE problems (bug 4565)
+        ## this variable seemed to have been causing SGE problems (bug 4565)
         delete $ENV{MC};
-        delete $ENV{BASH_FUNC_module};
 
         $ENV{SGE_ROOT} = $args{ergatis_cfg}->val('grid', 'sge_root');
         $ENV{SGE_CELL} = $args{ergatis_cfg}->val('grid', 'sge_cell');
@@ -314,7 +302,7 @@ umask(0000);
         $ENV{WF_TEMPLATE} = "$ENV{WF_ROOT}/templates";
 
         #$ENV{SYBASE} = '/usr/local/packages/sybase';
-	$ENV{PATH} = "$ENV{WF_ROOT}:$ENV{WF_ROOT}/bin:$ENV{WF_ROOT}/add-ons/bin:$ENV{SGE_ROOT}/bin/$ENV{SGE_ARCH}:$ENV{PATH}";
+        $ENV{PATH} = "$ENV{WF_ROOT}:$ENV{WF_ROOT}/bin:$ENV{WF_ROOT}/add-ons/bin:$ENV{PATH}";
         $ENV{LD_LIBRARY_PATH} = '';
         $ENV{TERMCAP} = ''; #can contain bad characters which crash wrapper shell script
         ## some application-specific env vars
