@@ -39,4 +39,4 @@ Funding
 
 ![Alt text](./images/gbmf_nsf.png "Funding")
 
-*Rev 02 Oct 2015 DJN*
+*Rev 19 Jul 2016 DJN*
