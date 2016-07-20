@@ -1,7 +1,0 @@
-[empty]
-
-[testing_die_if_empty]
-param.command       = $;BIN_DIR$;/die_if_empty
-param.--input_list  = '$;INPUT_LIST$;'
-param.--input_file  = '$;INPUT_FILE$;'
-arg                 = $;FLAGS$;
