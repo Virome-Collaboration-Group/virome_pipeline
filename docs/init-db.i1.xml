@@ -8,7 +8,7 @@
             <type>RunUnixCommand</type>
             <name>init-db</name>
             <state>incomplete</state>
-            <executable>$;DB_UPLOAD_EXEC$;</executable>
+            <executable>$;INIT_DB_EXEC$;</executable>
             <arg>-o $;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;</arg>
             <param>
                 <key>stderr</key>
