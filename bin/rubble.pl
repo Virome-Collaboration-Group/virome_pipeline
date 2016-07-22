@@ -237,7 +237,7 @@ if ($threads == 1) {
 }
 else {
     my $passthrough = " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues;
-    para_blastp($query, $dbClust, "$working_dir/0-blast_clust/", $evalue, $threads, $max_target_seqs, $passthrough);
+    para_blastp($query, $db, "$working_dir/0-blast_clust/", $evalue, $threads, $max_target_seqs, $passthrough);
 }
 
 
