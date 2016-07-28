@@ -19,9 +19,20 @@
 	    <executable>mkdir</executable>
 	    <arg>-p -m 777 $;TMP_DIR$;</arg>
 	</command>
-	<!--Processing-->
-	<!--Iterator-->
-	<INCLUDE file="$;DOCS_DIR$;/file_iterator_template.xml" keys="$;ITERATOR_NAME$;=ITERATOR1,$;ITERATOR_XML$;=ITERATOR1_XML"/>
-	<!--Postprocessing NONE-->
+    <command>
+        <type>RunUnixCommand</type>
+        <name>init-db</name>
+        <state>incomplete</state>
+        <executable>$;INIT_DB_EXEC$;</executable>
+        <arg>-o $;OUTPUT_DIRECTORY$;</arg>
+        <param>
+            <key>stderr</key>
+            <value>$;OUTPUT_DIRECTORY$;/$;COMPONENT_NAME$;.stderr</value>
+        </param>
+        <param>
+            <key>stdout</key>
+            <value>$;OUTPUT_DIRECTORY$;/$;COMPONENT_NAME$;.stdout</value>
+        </param>
+    </command>
     </commandSet>
 </commandSetRoot>
