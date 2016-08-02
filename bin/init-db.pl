@@ -384,7 +384,7 @@ $dbh->do( "CREATE TABLE `mgol_library` (
 
 #execute_cmd($cmd);
 
-$logger->info("init database for $options{sample} complete");
+$logger->info("init database for complete");
 exit(0);
 
 ###############################################################################
