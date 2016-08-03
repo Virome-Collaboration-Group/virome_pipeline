@@ -1,0 +1,5 @@
+#! /bin/sh
+
+mv install/* .
+mv src/perl bin
+rm -rf src
