@@ -238,7 +238,7 @@ close(OUT);
 ## 4. Final BLAST using the restriction list ##
 ###############################################
 if ($threads == 1) {
-    my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 std ppos\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs;
+    my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 qseqid,qlen,sseqid,salltitles,qstart,qend,sstart,send,pident,ppos,score,bitscore,slen,evalue\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs;
     print `$blast_exe`;
 }
 else {
@@ -332,4 +332,5 @@ sub task
 {
     system( @_ );
 }
+# VIROME likes: qseqid,qlen,sseqid,salltitles,qstart,qend,sstart,send,pident,ppos,score,bitscore,slen,evalue
 exit 0;
