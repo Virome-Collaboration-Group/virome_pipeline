@@ -101,6 +101,7 @@ my $tbuild_dir = 'project_saved_templates';
 my $abuild_dir = 'autopipe_package';
 my $sdir = 'play_data';
 my $software_dir = 'software';
+my $conf_dir = "config";
 
 foreach my $arg (@ARGV){
     if ($arg =~ /INSTALL_BASE/) {
@@ -136,7 +137,7 @@ print "Writing makefile to install directory $build_dir to $install_base\n";
 my $mm = WriteMakefile(
 	      'NAME'=>'ergatis',
 	      'EXE_FILES'=>$scripts,
-	      macro=>{BUILD_DIR => "$build_dir", A_BUILD_DIR=>"$abuild_dir", T_BUILD_DIR=>"$tbuild_dir", SAMPLE_DIR=>"$sdir", SOFTWARE_DIR=>"$software_dir"},
+	      macro=>{BUILD_DIR => "$build_dir", A_BUILD_DIR=>"$abuild_dir", T_BUILD_DIR=>"$tbuild_dir", SAMPLE_DIR=>"$sdir", SOFTWARE_DIR=>"$software_dir", CONFIG_DIR=>"$conf_dir"},
 	      'clean' =>{FILES => "MANIFEST.bak $wrapperstr README.symlinks"}
 	      );
 
@@ -146,7 +147,7 @@ sub MY::postamble {
     my $postamble = "WORKFLOW_DOCS_DIR=$workflowdocsdir\nSAMPLE_DOCS_DIR=$sampledocsdir";
     $postamble .= << 'END';
 
-ergatis_install : dirs pipeline_templates autopipe sample_data packages
+ergatis_install : dirs pipeline_templates autopipe sample_data packages confs
 	@echo "Installing components"
 	find $(BUILD_DIR)/components -path 'to_delete' -prune -o -print -type f -not -name software.config -not -name "*.tmpl" -exec install  {} ${WORKFLOW_DOCS_DIR} \;
 	#find $(BUILD_DIR)/components -type f -name "*.tmpl" -exec install  {} ${WORKFLOW_DOCS_DIR}/documentation \;
@@ -179,6 +180,11 @@ packages :
 	find $(SOFTWARE_DIR) -path 'to_delete' -prune -o -print -exec install {} $(PREFIX)/{} \;
 	find $(SOFTWARE_DIR) -path 'to_delete' -prune -o -print -type d -exec install {} ${PREFIX} \;
 
+confs :
+	@echo "Installing pre-packaged software to $(PREFIX)/config"
+	find $(CONFIG_DIR) -type d -exec mkdir -p $(PREFIX)/{} \;
+	find $(CONFIG_DIR) -path 'to_delete' -prune -o -print -exec install {} $(PREFIX)/{} \;
+	find $(CONFIG_DIR) -path 'to_delete' -prune -o -print -type d -exec install {} ${PREFIX} \;
 
 END
 
