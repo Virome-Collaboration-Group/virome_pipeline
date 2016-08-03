@@ -151,7 +151,7 @@ ergatis_install : dirs pipeline_templates autopipe sample_data packages confs
 	@echo "Installing components"
 	find $(BUILD_DIR)/components -path 'to_delete' -prune -o -print -type f -not -name software.config -not -name "*.tmpl" -exec install  {} ${WORKFLOW_DOCS_DIR} \;
 	#find $(BUILD_DIR)/components -type f -name "*.tmpl" -exec install  {} ${WORKFLOW_DOCS_DIR}/documentation \;
-	@install $(BUILD_DIR)/software.config $(PREFIX)
+	#@install $(BUILD_DIR)/software.config $(PREFIX)
 
 dirs :
 	mkdir -p $(WORKFLOW_DOCS_DIR)
