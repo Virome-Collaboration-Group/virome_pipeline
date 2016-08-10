@@ -222,6 +222,7 @@ my $residues = `blastdbcmd -db $db -info | grep "total residues"`;
 $residues =~ s/ total residues.*//;
 $residues =~ s/.* //;
 $residues =~ s/,//g;
+chomp($residues);
 open(IN,"<$lookup") || die "\n Cannot open the file: $lookup\n";
 open(OUT,">$working_dir/2-restrict/restrict.txt") || die "\n Cannot write to: $working_dir/2-restrict/restrict.txt\n";
 while(<IN>) {
