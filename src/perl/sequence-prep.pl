@@ -76,6 +76,7 @@ my $results = GetOptions (\%options,
                           'input|i=s',
 						  'outdir|o=s',
 						  'typeId|t=s',
+                          'database|b=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -103,6 +104,21 @@ unless(-s $options{input} > 0){
 ##############################################################################
 
 my $filename = $options{outdir}."/sequence.txt";
+my $max_id = 0;
+
+#### database connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
+
+my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
+$sth->execute;
+
+while ( my $result = $sth->fetchrow_hashref() ) {
+	if (defined $result->{max_id}) {
+		$max_id = $result->{max_id} + 1;
+	} else {
+		$max_id = 1;
+	}
+}
 
 #use Bio::SeqIO to parse and handle fasta file.
 my $fsa = Bio::SeqIO->new( -file   => $options{input},
@@ -112,8 +128,11 @@ open (OUT, ">>", $filename) || die $logger->logdie("Could not open file $filenam
 
 while (my $seq = $fsa->next_seq) {
 	my $gc = &calculate_gc($seq->seq());
+    my $timestamp = getTimeStamp();
 
-	print OUT join("\t", "1", $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), $options{typeId})."\n";
+	print OUT join("\t", $max_id, "1", $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
+
+    $max_id++;
 }
 
 close OUT;
@@ -150,4 +169,13 @@ sub calculate_gc{
 	my $gc_percent = ((length($c)+length($g))/length($bases)) * 100;
 
 	return $gc_percent;
+}
+
+###############################################################################
+sub getTimeStamp{
+	my $ts = `date +"%Y-%m-%d %H:%M:%S"`;
+
+	chomp $ts;
+
+	return $ts;
 }

@@ -49,16 +49,24 @@ use File::Basename;
 use Pod::Usage;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Bio::SeqIO;
+
 BEGIN {
-  use Ergatis::Logger;
+    use Ergatis::Logger;
 }
 
 my %options = ();
 my $results = GetOptions (\%options,
                           'fasta|f=s',
-			  'minlen|m=i',
-			  'outdir|o=s',
+            			  'minlen|m=i',
+            			  'outdir|o=s',
+                          'log|l=s',
+                          'debug|d=s',
                           'help|h') || pod2usage();
+
+my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
+my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
+      'LOG_LEVEL'=>$options{'debug'});
+$logger = $logger->get_logger();
 
 ## display documentation
 if( $options{'help'} ){
