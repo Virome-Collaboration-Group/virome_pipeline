@@ -55,7 +55,7 @@ use Data::Dumper;
 use UTILS_V;
 
 BEGIN {
-  use Ergatis::Logger;
+    use Ergatis::Logger;
 }
 
 ##############################################################################

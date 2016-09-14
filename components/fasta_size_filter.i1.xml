@@ -10,15 +10,14 @@
         <state>incomplete</state>
         <executable>$;FASTA_SIZE_FILTER$;</executable>
         <arg>-f $;I_FILE_PATH$; -o $;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$; -m $;I_MINLENGTH$; </arg>
-	<param>
-                <key>stderr</key>
-        	<value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stderr</value>
+        <param>
+            <key>stderr</key>
+            <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stderr</value>
         </param>
-	<param>
-                <key>stdout</key>
-        	<value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stdout</value>
+        <param>
+            <key>stdout</key>
+            <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stdout</value>
         </param>
   </command>
     </commandSet>
 </commandSetRoot>
-

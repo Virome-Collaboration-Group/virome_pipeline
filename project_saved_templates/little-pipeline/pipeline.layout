@@ -2,25 +2,85 @@
     <commandSet type="serial">
         <state>incomplete</state>
         <name>start</name>
-	<commandSet type="serial">
-	    <state>incomplete</state>
-	    <name>init-db.default</name>
-	</commandSet>
-	<commandSet type="serial">
-            <state>incomplete</state>
-            <name>fasta_size_filter.default</name>
-        </commandSet>
-	<commandSet type="serial">
-  	    <state>incomplete</state>
-	    <name>metagene.default</name>
-	</commandSet>
-	<commandSet type="serial">
-            <state>incomplete</state>
-            <name>mga2seq_pep.default</name>
-        </commandSet>
-	<commandSet type="serial">
-	    <state>incomplete</state>
-	    <name>rubble.uniref</name>
-	</commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>init-db.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>fasta_size_filter.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>nt_fasta_check.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence-prep.read</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.sequence_read</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>metagene.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>mga2seq_pep.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence-prep.orf_pep</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence-prep.orf_nuc</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.orf_pep</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.orf_nuc</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-to-lookup.seq-lookup</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence_relationship-prep.default</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.sequence_relationship-prep</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>clean_expand_btab.uniref</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>clean_expand_btab.mgol</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>blast-result-prep.uniref</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>blast-result-prep.mgol</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.blastp_uniref</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.blastp_mgol</name>
+            </commandSet>
     </commandSet>
 </commandSetRoot>

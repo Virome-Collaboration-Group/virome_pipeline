@@ -83,8 +83,7 @@ my %seq_hash;
 my $seq_num = 0;
 my $seq_pass = 0;
 
-my @suffixes = (".fsa",".fasta",".fna",".txt");
-my $fileName = basename($inFasta,@suffixes);
+my $fileName = fileparse($inFasta, qr/\.[^.]*/);
 
 $fileName = $options{outdir}."/".$fileName;
 my $Highscore = $fileName . ".filtered.fsa";

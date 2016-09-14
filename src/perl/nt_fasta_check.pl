@@ -52,16 +52,13 @@ use Pod::Usage;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 
 BEGIN {
-  use Ergatis::Logger;
+    use Ergatis::Logger;
 }
 
 my %options = ();
 my $results = GetOptions (\%options,
-                          'fasta|f=s',
-                          'outdir|o=s',
-			  'libList|ll=s',
-			  'libFile|lf=s',
-			  'prefix|p=s',
+                          'input|i=s',
+                          'output_dir|o=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -78,44 +75,25 @@ $logger = $logger->get_logger();
 #############################################################################
 #### DEFINE GLOBAL VAIRABLES.
 ##############################################################################
-## make sure everything passed was peachy
+#### make sure everything passed was peachy
 &check_parameters(\%options);
 
 my $count=0;
-my @suffixes = (".fsa", ".fa", ".fasta", ".txt");
-my $filebase = fileparse($options{fasta}, @suffixes);
-my($warn1,$warn2,$warn3,$warn4,$warn5) = (0,0,0,0,0);
+my $filebase = fileparse($options{fasta},  qr/\.[^.]*/););
+my ($warn1,$warn2,$warn3,$warn4,$warn5) = (0,0,0,0,0);
 
-my $final_output=$options{outdir}."/".$filebase.".edited.fsa";
-my $ref_file=$options{outdir}."/".$filebase.".ref";
+my $final_output=$options{output_dir}."/".$filebase.".edited.fsa";
+my $ref_file=$options{output_dir}."/".$filebase.".ref";
 
-my $libinfo = LIBInfo->new();
-my $libObject;
-
-if ($options{libList} && $options{libFile}){
-	$logger->debug("Can not use both library list file and library file.  Using library file\n");
-	$libObject = $libinfo->getLibFileInfo($options{libFile});
-} elsif ((defined $options{libFile}) && (length($options{libFile}))){
-	$libObject = $libinfo->getLibFileInfo($options{libFile});
-} elsif ((defined $options{libList}) && (length($options{libList}))){
-	$libObject = $libinfo->getLibListInfo($options{libList});
-} else {
-	$logger->logdie("Library list file or library file not defined");
-	exit(-1);
-}
-##############################################################################
-
-open(FOUT,">", $final_output) or $logger->logdie("Cannot open output file $final_output\n");
+open(FOUT, ">", $final_output) or $logger->logdie("Cannot open output file $final_output\n");
 open(REF, ">", $ref_file) or $logger->logdie("Cannot open ref output file $ref_file\n");
 
-my $inseq = Bio::SeqIO->new(
-                            -file   => $options{fasta},
-                            -format => 'fasta'
-                            );
+my $inseq = Bio::SeqIO->new(-file   => $options{input},
+                            -format => 'fasta' );
 
-while (my $s = $inseq->next_seq){
-
-	my $new_name = name_modifier($s->id, $libObject->{prefix});
+while (my $s = $inseq->next_seq) {
+	#my $new_name = name_modifier($s->id, $libObject->{prefix});
+    my $new_name = name_modifier($s->id);
 	my $qc_flag = freq_cal($s->seq, $s->id);
 	my $sequence_string = $s->seq;
 	my $ATGC = $sequence_string =~ tr/ATGCatgc/ATGCatgc/;
@@ -125,6 +103,7 @@ while (my $s = $inseq->next_seq){
 	if ($qc_flag == 1) {
 	    print FOUT ">".$new_name."\n".$s->seq."\n";
 	}
+
 	$count++;
 }
 
@@ -157,13 +136,12 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-	my @required = qw(fasta outdir);
+	my @required = qw(input output_dir);
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {
 			pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
 			$logger->logdie("Inputs not defined, plesae read perldoc $0\n");
-			exit(-1);
 		}
 	}
 }
@@ -171,26 +149,31 @@ sub check_parameters {
 ###############################################################################
 sub name_modifier{
 	my $id = shift;
-	my $prefix = shift;
+	#my $prefix = shift;
+
+    my $name = $id;
 
 	## replace any underscore with dash to identify
 	## prefix from rest of the sequence.
         #$id =~ s/_/-/g;
-	## get rid of pipes and slashes in the header too
+
+    #### get rid of pipes and slashes in the header too
 	$id =~ s/\|/-/g;
 	$id =~ s/\//-/g;
-	## get rid of parentheses as well
+
+    #### get rid of parentheses as well
 	$id =~ s/\(//g;
 	$id =~ s/\)//g;
 
-    my $name = $prefix . '_'. $id;
+    #my $name = $prefix . '_'. $id;
 
-	## add old id to new id mapping
+	#### add old id to new id mapping
 	print REF $id."\t".$name."\n";
-	if (length($name) > 255) {
-	    die "\n\n ERROR: There was a FASTA header longer than 255 characterss. Here's the culprit: \n $name\n\n";
+	if (length($id) > 255) {
+	    $logger->logdie("ERROR: There was a FASTA header longer than 255 characterss. Here's the culprit: \n $id");
 	}
-	return $name;
+
+	return $id;
 }
 
 ###############################################################################

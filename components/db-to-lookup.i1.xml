@@ -2,14 +2,14 @@
 
 <commandSetRoot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation='commandSet.xsd'>
     <commandSet type="serial">
-        <name>sequence-prep</name>
+        <name>db-to-lookup</name>
         <!--Processing-->
         <command>
             <type>RunUnixCommand</type>
-            <name>sequence-prep</name>
+            <name>db-to-lookup</name>
             <state>incomplete</state>
-            <executable>$;SEQUENCE_PREP_EXEC$;</executable>
-            <arg>-i $;I_FILE_PATH$; -o $;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$; -t $;SEQ_TYPE$;</arg>
+            <executable>$;DB_TO_LOOKUP_EXEC$;</executable>
+            <arg>-i $;I_FILE_PATH$; -e $;LOCATION$; -o $;OUTPUT_DIRECTORY$; -t $;TABLE_NAME$;</arg>
             <param>
                 <key>stderr</key>
                 <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stderr</value>

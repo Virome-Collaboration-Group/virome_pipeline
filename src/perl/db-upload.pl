@@ -56,6 +56,7 @@ use DBI;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use Data::Dumper;
+use File::Basename;
 use UTILS_V;
 
 BEGIN {
@@ -66,7 +67,7 @@ BEGIN {
 my %options = ();
 my $results = GetOptions (\%options,
                           'input|i=s',
-						  'outdir|o=s',
+						  'output_dir|o=s',
 						  'table|t=s',
 						  'database|b=s',
                           'log|l=s',
@@ -86,13 +87,14 @@ if( $options{'help'} ){
 ## make sure everything passed was peachy
 &check_parameters(\%options);
 
+my $filename = fileparse($options{input}, qr/\.[^.]*/);
 ###############################################################################
+$logger->info("Database upload for $filename in $options{table} started");
 
 my $cmd = "";
 my $this;
 
-open(OUT, ">", "$options{outdir}/$options{table}") or
-	$logger->logdie("Could not open file to write $options{outdir}/$options{table}");
+open(OUT, ">", "$options{output_dir}/$options{table}") or $logger->logdie("Could not open file to write $options{output_dir}/$options{table}");
 
 print OUT "PRAGMA synchronous=OFF;\n";
 print OUT "PRAGMA count_changes=OFF;\n";
@@ -103,7 +105,7 @@ print OUT ".import $options{input} $options{table}\n";
 
 close(OUT);
 
-$cmd = "sqlite3 $options{database} < $options{outdir}/$options{table}";
+$cmd = "sqlite3 $options{database} < $options{output_dir}/$options{table}";
 
 execute_cmd($cmd);
 
@@ -113,7 +115,7 @@ if (( $? >> 8 ) != 0 ){
 	exit($?>>8);
 }
 
-$logger->info("Database upload for $options{sample}.$options{token} in $options{table} completed");
+$logger->info("Database upload for $filename in $options{table} completed");
 exit(0);
 
 ###############################################################################

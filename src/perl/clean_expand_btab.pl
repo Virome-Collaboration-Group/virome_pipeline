@@ -28,29 +28,24 @@ B<--help,-h>
     The input is defined with --input.  Input must be a btab blast output
     --output is the full path to output file
 
-    Input is expected to have 21 fields and output of blast2btab
+    Expected input from RUBBLE in order is
 
-    1   query_name
-    2   date
-    3   query_length
-    4   algorithm
-    5   database_name
-    6   hit_name
-    7   qry_start
-    8   qry_end
-    9   hit_start
-    10  hit_end
-    11  percent_identity
-    12  percent_similarity
-    13  raw_score
-    14  bit_score
-    15  NULL
-    16  hit_description
-    17  blast_frame
-    18  qry_strand (Plus | Minus)
-    19  hit_length
-    20  e_value
-    21  p_value
+    1 qseqid,qlen,sseqid,salltitles,qstart,qend,sstart,send,pident,ppos,score,bitscore,slen,evalue
+
+    1   query_name (qseqid)
+    2   query_length (qlen)
+    3   hit_name (sseqid)
+    4   hit_description (salltitles)
+    5   qry_start (qstart)
+    6   qry_end (qend)
+    7   hit_start (sstart)
+    8   hit_end (send)
+    9   percent_identity (pident)
+    10  percent_similarity (ppos)
+    11  raw_score (score)
+    12  bit_score (bitscore)
+    13  hit_length (slen)
+    14  e_value
 
 =head1  OUTPUT
 
@@ -60,34 +55,35 @@ B<--help,-h>
     2   query_length
     3   algorithm
     4   database_name
-    5   hit_name
-    6   qry_start
-    7   qry_end
-    8   hit_start
-    9   hit_end
-    10  percent_identity
-    11  percent_similarity
-    12  raw_score
-    13  bit_score
-    14  hit_description
-    15  blast_frame
-    16  qry_strand (Plus | Minus)
-    17  hit_length
-    18  e_value
+    5   db_ranking_code
+    6   hit_name
+    7   hit_description
+    8   qry_start
+    9   qry_end
+    10  hit_start
+    11  hit_end
+    12  percent_identity
+    13  percent_similarity
+    14  raw_score
+    15  bit_score
+    16  blast frame    # dummy place holder to delete later
+    17  query strand   # dummy place holder to delete later
+    18  hit_length
+    19  e_value
 
     if UNIREF100P blast expanded btab blast output with
-    KEGG, COG, SEED and ACLAME results and append taxonomy data.
+    KEGG, COG, SEED, PHGSEED and ACLAME results and append taxonomy data.
 
-    19  domain
-    20  kingdom
-    21  phylum
-    22  class
-    23  order
-    24  family
-    25  genus
-    26  species
-    27  organism
-	28  functional hit
+    20  domain
+    21  kingdom
+    22  phylum
+    23  class
+    24  order
+    25  family
+    26  genus
+    27  species
+    28  organism
+	29  functional hit
 
 =head1  CONTACT
 
@@ -102,80 +98,52 @@ B<--help,-h>
 
 use strict;
 use warnings;
-use DBI;
 use Pod::Usage;
-use MLDBM 'DB_File';
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use UTILS_V;
+use MLDBM 'DB_File';
 use Data::Dumper;
+use File::Basename;
 
-#BEGIN {
-#  use Ergatis::Logger;
-#}
-
+BEGIN {
+  use Ergatis::Logger;
+}
+##############################################################################
 my %options = ();
 my $results =
-  GetOptions( \%options, 'input|i=s', 'lookupDir|ld=s', 'output|o=s', 'env|e=s',
-	'help|h' )
-  || pod2usage();
+  GetOptions( \%options,
+            'input|i=s',
+            'database|b=s',
+            'output_dir|o=s',
+            'log|l=s',
+            'debug|d=s',
+            'help|h' )
+        || pod2usage();
 
-#my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
-#my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
-#                                  'LOG_LEVEL'=>$options{'debug'});
-#$logger = $logger->get_logger();
+my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
+my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
+                                 'LOG_LEVEL'=>$options{'debug'});
+$logger = $logger->get_logger();
 
 ## display documentation
-if ( $options{'help'} ) {
-	pod2usage( { -exitval => 0, -verbose => 2, -output => \*STDERR } );
+if( $options{'help'} ){
+    pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
+
 ##############################################################################
 #### DEFINE GLOBAL VAIRABLES.
 ##############################################################################
-my $db_user;
-my $db_pass;
-my $dbname;
-my $db_host;
-my $host;
-
-my $dbh1;
 
 ## make sure everything passed was peachy
 &check_parameters( \%options );
 
 ##############################################################################
-
 my $utils = new UTILS_V;
 
-my (%kegg_lkp, %cog_lkp, %seed_lkp, %aclame_lkp, %uniref_lkp, %mgol_lkp, %phgseed_lkp);
+my $filename = fileparse($options{input}, qr/\.[^.]*/);
 
-#### get database name from input file.
-my $database_name_from_input = `head -n1 $options{input} | cut -f5`;
-chomp $database_name_from_input;
-
-if ($database_name_from_input =~ /uniref100p/i) {
-    #tie lookup files
-    tie(%kegg_lkp,    'MLDBM', $options{lookupDir} . "/kegg.ldb" );
-    tie(%cog_lkp,     'MLDBM', $options{lookupDir} . "/cog.ldb" );
-    tie(%seed_lkp,    'MLDBM', $options{lookupDir} . "/seed.ldb" );
-    tie(%aclame_lkp,  'MLDBM', $options{lookupDir} . "/aclame.ldb" );
-    tie(%uniref_lkp,  'MLDBM', $options{lookupDir} . "/uniref.ldb" );
-    tie(%phgseed_lkp, 'MLDBM', $options{lookupDir} . "/phgseed.ldb" );
-
-    #set class obj
-    $utils->kegg_lookup( \%kegg_lkp );
-    $utils->cog_lookup( \%cog_lkp );
-    $utils->seed_lookup( \%seed_lkp );
-    $utils->aclame_lookup( \%aclame_lkp );
-    $utils->uniref_lookup( \%uniref_lkp );
-    $utils->phgseed_lookup( \%phgseed_lkp );
-} elsif ($database_name_from_input =~ /metagenomes/i) {
-    tie(%mgol_lkp, 'MLDBM', $options{lookupDir} . "/mgol.ldb" );
-    $utils->mgol_lookup( \%mgol_lkp );
-}
-
-open( BTAB, "<", $options{input} ) or die "Can not open file $options{input}\n";
-open( OUT, ">", $options{output} )
-  or die "Can not open file to write $options{output}\n";
+open( BTAB, "<", $options{input} ) or $logger->logdie("Can not open file $options{input}");
+open( OUT, ">", $options{output_dir} ."/". $filename .".btab" ) or $logger->logdie("Can not open file to write ".$options{output_dir}."/".$filename.".btab");
 
 my $prev         = "";
 my $curr         = "";
@@ -187,7 +155,13 @@ my @aclamearray  = ();
 my @seedarray    = ();
 my @phgseedarray = ();
 
-my $db_name = "UNIREF100P";
+my $lookup_file = "";
+my %sequenceLookup;
+
+if ($options{database} =~ /^uniref100p$|^metagenomes$/i) {
+	$lookup_file = $options{output_dir}."/lookup_dir/sequence_".$libraryId.".ldb";
+	tie(%sequenceLookup, 'MLDBM', $lookup_file);
+}
 
 while (<BTAB>) {
 	my $btabline = $_;
@@ -195,18 +169,11 @@ while (<BTAB>) {
 
 	my @tmp = split( /\t/, $btabline );
 
-	#remove date, p-value and null value from the original blast2btab output.
-	#this will create an array of length 17 or 18 items instead of 21 items.
-	my @arr = @tmp[ 0, 2 .. 13, 15 .. 19 ];
+    #### insert database name, qry strand and blast frame into the output line
+	$btabline = join( "\t", @tmp[0..1], $options{database}, @tmp[2..11], "0", "0", @tmp[12..$#tmp] );
 
-	#### added to remove database name with _MMMYYYY suffix
-	$arr[3] =~ s/(.*)_\w\w\w\d\d\d\d/$1/;
-
-	$btabline = join( "\t", @arr );
-	$db_name  = $arr[3];
-
-	if ( $db_name =~ /uniref100p/i ) {
-		$curr = $arr[0];
+	if ( $options{database} =~ /^uniref100p$/i ) {
+		$curr = $tmp[0];
 
 		if ( $curr eq $prev ) {
 			push( @seqarray, $btabline );
@@ -227,7 +194,7 @@ while (<BTAB>) {
 			$prev = $curr;
 		}    ##END OF ELSE CONDITION
 	}
-	elsif ( $db_name =~ /metagenomes/i ) {
+	elsif ( $options{database} =~ /^metagenomes$/i ) {
 		print OUT modifyDescription($btabline) . "\n";
 	}
 	else {
@@ -235,22 +202,12 @@ while (<BTAB>) {
 	}
 }    ##END OF BTAB file
 
-#expand last set of sequences.
-if ( $db_name =~ /UNIREF100P/i ) {
+#### expand last set of sequences.
+if ( $options{database} =~ /^UNIREF100P$/i ) {
 	expand();
 }
 
 close(OUT);
-
-if ($database_name_from_input =~ /uniref100p/i) {
-    untie(%kegg_lkp);
-    untie(%seed_lkp);
-    untie(%phgseed_lkp);
-    untie(%aclame_lkp);
-    untie(%uniref_lkp);
-} elsif ($database_name_from_input =~ /metagenomes/i) {
-    untie(%mgol_lkp);
-}
 
 exit(0);
 
@@ -260,444 +217,398 @@ exit(0);
 sub check_parameters {
 	my $options = shift;
 
-	## make sure sample_file and output_dir were passed
-	unless ( $options{input}
-		&& $options{lookupDir}
-		&& $options{output}
-		&& $options{env} )
-	{
-
-		#	$logger->logdie("No input defined, plesae read perldoc $0\n\n");
-		exit(1);
+	#### make sure sample_file and output_dir were passed
+	unless ( $options{input} && $options{database} && $options{output_dir} ) {
+        pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
+		$logger->logdie("No input defined, plesae read perldoc $0\n\n");
 	}
-
-	if ( $options{env} eq 'dbi' ) {
-		$db_user = q|bhavsar|;
-		$db_pass = q|P3^seus|;
-		$db_name = q|VIROME|;
-		$db_host = $options{server} . q|.dbi.udel.edu|;
-		$host    = q|virome.dbi.udel.edu|;
-	}
-	elsif ( $options{env} eq 'diag' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'diag1' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing_1|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'diag2' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing_2|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'diag3' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing_3|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'diag4' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing_4|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'diag5' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing_5|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'igs' ) {
-		$db_user = q|dnasko|;
-		$db_pass = q|dnas_76|;
-		$db_name = q|virome_processing|;
-		$db_host = q|dnode001.igs.umaryland.edu|;
-		$host    = q|dnode001.igs.umaryland.edu|;
-	}
-	elsif ( $options{env} eq 'ageek' ) {
-		$db_user = q|bhavsar|;
-		$db_pass = q|Application99|;
-		$db_name = $options{server};
-		$db_host = q|10.254.0.1|;
-		$host    = q|10.254.0.1|;
-	}
-	else {
-		$db_user = q|kingquattro|;
-		$db_pass = q|Un!c0rn|;
-		$db_name = q|VIROME|;
-		$db_host = q|localhost|;
-		$host    = q|localhost|;
-	}
-
-	$dbh1 = DBI->connect( "DBI:mysql:database=uniref_lookup;host=$host",
-		"$db_user", "$db_pass",
-		{ PrintError => 1, RaiseError => 1, AutoCommit => 1 } );
 }
 
 ##############################################################################
 sub expand {
 
-	my ( $sFxn, $kFxn, $cFxn, $aFxn, $gFxn, $pFxn ) = ( 0, 0, 0, 0, 0, 0 );
+    #### each HSP line is expected to be following format (altered from orignal input in main sub routine)
+	####
+	#### 0:  query_name         : XTG_ctg7180000040098_772_1_1
+	#### 1:  query_length       : 257
+	#### 2:  database_name      : uniref100p (added in main subroutine)
+	#### 3:  hit_name           : fig|6666666.43263.peg.22
+	#### 4:  hit_description    : fig|6666666.43263.peg.22 |~|LINEAGE=~DOMAIN:~Viruses;~KINGDOM:~Viruses;~PHYLUM:~Viruses;~CLASS:~Viruses;~ORDER:~Caudovirales;~FAMILY:~Podoviridae;~GENUS:~Podoviridae;~SPECIES:~Puniceispirillum phage HMO-2011;~ORGANISM:~Puniceispirillum phage HMO-2011|~|UNIREF=~ACCESSION:~fig|6666666.43263.peg.22;~DESC:~Protein of Unknown Function;~FXN:~0|~|SEED=~ACCESSION:~fig|6666666.43263.peg.22;~DESC:~UNKNOWN;~FXN:~0|~|PHGSEED=~ACCESSION:~fig|6666666.43263.peg.22;~DESC:~Protein of Unknown Function;~FXN:~0
+	#### 5:  qry_start          : 1
+	#### 6:  qry_end            : 257
+	#### 7:  hit_start          : 1
+	#### 8:  hit_end            : 257
+	#### 9:  percent_identity   : 57.20
+	#### 10: percent_similarity : 77.82
+	#### 11: raw_score          : 861
+	#### 12: bit_score          : 336
+    #### 13: blast frame        : dummy value of blast frame (added in main subroutine)
+    #### 14: qry strand         : dummy value of query strand (added in main subroutine)
+	#### 15: hit_length         : 300
+	#### 16: e_value            : 4e-112
+
+    #### array is a set of hit for a give query sequences.
+    #### we should set only one hit as top_hit for each functional database
+    #### so init flag outside for each expand (i.e set of query seqeunces)
+    my $has_aclame_fxn = 0;
+    my $has_cog_fxn = 0;
+    my $has_kegg_fxn = 0;
+    my $has_seed_fxn = 0;
+    my $has_phgseed_fxn = 0;
+    my $has_uniref_fxn = 0;
 
 	foreach my $seqline (@seqarray) {
 		chomp $seqline;
 
-		#split blast output.
-		my @arr1 = split( /[\t]/, $seqline );
+        my (%data, %taxonomy, %uniref, %seed, %kegg, %cog, %aclame, %phgseed);
+        my $lineage = "";
 
-		#get hit_name/accession.
-		my $unirefId = $arr1[4];
+        ####split blast output.
+        my @hsp = split(/\t/, $seqline);
+        #my $sequenceId = $sequenceLookup{$hsp[0]};
+        my $sequenceId = "S1";
 
-		#get uniref lookup record
-		my $u_acc_hash = $utils->get_acc_from_lookup( "uniref", $unirefId );
-		my $u_hash     = $u_acc_hash->{acc_data}[0];
+        #### re-arrange all element as expected by sqlite blastp table
+        #### resulting array look like
+        ####
+        #### 0: sequenceId
+        #### 1: qname
+        #### 2: qlen
+        #### 3: algo
+        #### 4: dname
+        #### 5: db_ranking
+        #### 6: hname
+        #### 7: hdesc
+        #### 8: qstart
+        #### 9: qend
+        #### 10: hstart
+        #### 11: hend
+        #### 12: pident
+        #### 13: psim
+        #### 14: rscr
+        #### 15: bscr
+        #### 16: blast frame    # dummy place holder to delete later
+        #### 17: query strand   # dummy place holder to delete later
+        #### 18: slen
+        #### 19: eval
+        #### 20: dom
+        #### 21: kin
+        #### 22: phl
+        #### 23: cls
+        #### 24: ord
+        #### 25: fam
+        #### 26: gen
+        #### 27: spe
+        #### 28: org
+        #### 29: fxn_topHit
 
-		#print Dumper $u_hash;
+        my @new = $sequenceId;    # sequenceid add to array
+        push (@new, @hsp[0..1]);  # query_name and query_length added
+        push (@new, "BLASTP");    # algorithm added
+        push (@new, $hsp[2]);     # database name
 
-		#prepare taxonomy
-		my $taxonomy =
-		  ( ( defined $u_hash->{domain} ) ? $u_hash->{domain} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{kingdom} ) ? $u_hash->{kingdom} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{phylum} ) ? $u_hash->{phylum} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{n_class} ) ? $u_hash->{n_class} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{n_order} ) ? $u_hash->{n_order} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{family} ) ? $u_hash->{family} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{genus} ) ? $u_hash->{genus} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{species} ) ? $u_hash->{species} : 'UNKNOWN' )
-		  . "\t";
-		$taxonomy .=
-		  ( ( defined $u_hash->{organism} ) ? $u_hash->{organism} : 'UNKNOWN' );
+        #### db ranking system
+        if ($hsp[2] =~ /uniref100p/i){
+            push (@new, 100);
+        } elsif ($hsp[2] =~ /aclame/i){
+            push (@new, 90);
+        } elsif ($hsp[2] =~ /phgseed/i){
+            push (@new, 80);
+        } elsif ($hsp[2] =~ /seed/i){
+            push (@new, 70);
+        } elsif ($hsp[2] =~ /kegg/i){
+            push (@new, 60);
+        } elsif ($hsp[2] =~ /cog/i){
+            push (@new, 50);
+        }
 
-		#replace hit_description in arr_id 14 and then append taxonomy data.
-		$arr1[13] =
-		  ( defined $u_hash->{desc} )
-		  ? $utils->trim( $u_hash->{desc} )
-		  : 'UNKNOWN';
-		my $resultrow = join( "\t", @arr1 ) . "\t" . $taxonomy;
+        push (@new, @hsp[3..$#hsp]);
 
-		if ( !$gFxn ) {
-			my $go_fxn_stmt = qq{SELECT gc.name
-							FROM gofxn g INNER JOIN go_chains gc ON g.chain_id=gc.chain_id
-							WHERE gc.level=1 and g.realAcc = ?
-							LIMIT 1};
-			my $go_fxn_qry = $dbh1->prepare($go_fxn_stmt);
-			$go_fxn_qry->execute($unirefId);
+        @new = map {$util->trim($_)} @new;
 
-			while ( my $result = $go_fxn_qry->fetchrow_hashref() ) {
-				if ( $$result{name} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				{
-					$resultrow .= "\t1\n";
-					$gFxn = 1;
-				}
-			}
-			if ( !$gFxn ) {
-				$resultrow .= "\t0\n";
-			}
-		}
-		else { $resultrow .= "\t0\n"; }
+        #### create a hash with lineage, and each database
+        #### resulting hash is of following format
+        ####
+        #### LINEAGE => DOMAIN:....;KINGDOM:....;PHYLUM:....;......
+        #### UNIREF => ACCESSION:.....;DESC:....;FXN:....
+        #### SEED => ACCESSION:...;DESC:.....FXN:....
+        ####
 
-		push( @unirefarray, $resultrow );
+        my @temp_array = split(/\|~\|/, $hsp[4]);
+        @temp_array = @temp_array[1..$#temp_array];
+        %data = map_array2hash(\@temp_array, "=~");
 
-		## CHECK IF KEGGID IS NOT NULL
-		if (   defined $u_hash->{kegg_acc}
-			&& ( length( $utils->trim( $u_hash->{kegg_acc} ) ) > 1 )
-			&& ( $u_hash->{kegg_acc} !~ /null/i ) )
-		{
+        #### extract functional taxonomy
+        if (exists $data{LINEAGE}) {
+            @temp_array = split(/;~/, $data{LINEAGE});
+            %taxonomy = map_array2hash(\@temp_array, ":~");
 
-			#reset array.
-			@arr1 = ();
-			@arr1 = split( /[\t]/, $seqline );
+            $taxonomy{DOMAIN} = "UNKNOWN" unless ($taxonomy{DOMAIN} && $taxonomy{DOMAIN} !~ /null/i);
+            $taxonomy{KINGDOM} = "UNKNOWN" unless ($taxonomy{KINGDOM} && $taxonomy{KINGDOM} !~ /null/i);
+            $taxonomy{PHYLUM} = "UNKNOWN" unless ($taxonomy{PHYLUM} && $taxonomy{PHYLUM} !~ /null/i);
+            $taxonomy{CLASS} = "UNKNOWN" unless ($taxonomy{CLASS} && $taxonomy{CLASS} !~ /null/i);
+            $taxonomy{ORDER} = "UNKNOWN" unless ($taxonomy{ORDER} && $taxonomy{ORDER} !~ /null/i);
+            $taxonomy{FAMILY} = "UNKNOWN" unless ($taxonomy{FAMILY} && $taxonomy{FAMILY} !~ /null/i);
+            $taxonomy{GENUS} = "UNKNOWN" unless ($taxonomy{GENUS} && $taxonomy{GENUS} !~ /null/i);
+            $taxonomy{SPECIES} = "UNKNOWN" unless ($taxonomy{SPECIES} && $taxonomy{SPECIES} !~ /null/i);
+            $taxonomy{ORGANISM} = "UNKNOWN" unless ($taxonomy{ORGANISM} && $taxonomy{ORGANISM} !~ /null/i);
 
-			#split accession by ; if there are multiple acc's
-			my @k_arr = split( /;/, $u_hash->{kegg_acc} );
+            $lineage = join("\t", $taxonomy{DOMAIN}, $taxonomy{KINGDOM}, $taxonomy{PHYLUM},
+                            $taxonomy{CLASS}, $taxonomy{ORDER}, $taxonomy{FAMILY},
+                            $taxonomy{GENUS}, $taxonomy{SPECIES}, $taxonomy{ORGANISM});
+        }
 
-			# get acc array from lookup hash
-			my $k_acc_hash = $utils->get_acc_from_lookup( "kegg", $k_arr[0] );
-			my $k_hash     = $k_acc_hash->{acc_data}[0];
+        #### expand UNIREF informaiton
+        if (exists $data{UNIREF}) {
+            #### create a hash of each database value
+            #### resulting hash is
+            ####
+            #### ACCESSION => ....
+            #### DESC => ....
+            #### FXN => ....
 
-			$arr1[3]  = q|KEGG|;      #replace database name
-			$arr1[4]  = $k_arr[0];    #replace hit_name
-			                          #replace hit_description
-			$arr1[13] =
-			  ( defined $k_hash->{desc} )
-			  ? $utils->trim( $k_hash->{desc} )
-			  : 'UNKNOWN';
+            @temp_array = split(/;~/, $data{UNIREF});
+            %uniref = map_array2hash(\@temp_array, ":~");
 
-			my $kegg_row = join( "\t", @arr1 ) . "\t" . $taxonomy;
+            $new[4] = "UNIREF100P";
+            $new[5] = "100";
+            $new[6] = $uniref{ACCESSION};
+            $new[7] = ((defined $uniref{DESC}) && (length($uniref{DESC}))) ? $uniref{DESC} : "NA";
 
-			# if acc has meaning full fxn 1 then set fxnal hit at 1 else 0
-			if (
-				   ( !$kFxn )
-				&& ( defined $k_hash->{fxn1} )
-				&& ( $k_hash->{fxn1} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				&& length( $k_hash->{fxn1} )
-			  )
-			{
-				$kegg_row .= "\t1\n";
-				$kFxn = 1;
-			}
-			else { $kegg_row .= "\t0\n"; }
+            if ($has_uniref_fxn) {
+                $uniref{FXN} = 0;
+            } else {
+                $has_uniref_fxn = $uniref{FXN};
+            }
 
-			push( @keggarray, $kegg_row );
-		}
+            push (@unirefarray, join("\t", @new, $lineage, $uniref{FXN}));
+        }
 
-		## CHECK IF COGID IS NOT NULL
-		$resultrow = "";
-		if (   defined $u_hash->{cog_acc}
-			&& ( length( $utils->trim( $u_hash->{cog_acc} ) ) > 1 )
-			&& ( $u_hash->{cog_acc} !~ /null/i ) )
-		{
+        #### expand SEED informaiton
+        if (exists $data{SEED}) {
+            @temp_array = split(/;~/, $data{SEED});
+            %seed = map_array2hash(\@temp_array, ":~");
 
-			#reset array.
-			@arr1 = ();
-			@arr1 = split( /[\t]/, $seqline );
+            ###############################################################
+            #### a work around for incorrect seed mldbm file when running
+            #### uniref_SEPT2013_edit was created in DEC2014.
+            ###############################################################
+            #my $temp_acc_hash = $lookup_util->get_acc_from_lookup( "seed", $seed{ACCESSION} );
+            #my $temp_hash     = $temp_acc_hash->{acc_data}[0];
+            #$seed{DESC} = $s_hash->{desc};
+            #if ((defined $s_hash->{fxn1}) && length($s_hash->{fxn1})
+            #	&& ($s_hash->{fxn1} !~
+            #		/unknown|unclassified|unassigned|uncharacterized/i )) {
+            #	$seed{FXN} = 1;
+            #}
 
-			#split accession by ; if there are multiple acc's
-			my @c_arr = split( /;/, $u_hash->{cog_acc} );
+            $new[4] = "SEED";
+            $new[5] = "70";
+            $new[6] = $seed{ACCESSION};
+            $new[7] = ((defined $seed{DESC}) && (length($seed{DESC}))) ? $seed{DESC} : "NA";
 
-			# get acc array from lookup hash
-			my $c_acc_hash = $utils->get_acc_from_lookup( "cog", $c_arr[0] );
-			my $c_hash     = $c_acc_hash->{acc_data}[0];
+            if ($has_seed_fxn) {
+                $seed{FXN} = 0;
+            } else {
+                $has_seed_fxn = $seed{FXN};
+            }
 
-			$arr1[3] = q|COG|;      #replace database name
-			$arr1[4] = $c_arr[0];   #replace hit_name,
-			                        #no desc in COG table use uniref description
-			$arr1[13] = $utils->trim( $u_hash->{desc} );
+            push (@seedarray, join("\t", @new, $lineage, $seed{FXN}));
+        }
 
-			my $cog_row .= join( "\t", @arr1 ) . "\t" . $taxonomy;
+        #### expand KEGG informaiton
+        if (exists $data{KEGG}) {
+            @temp_array = split(/;~/, $data{KEGG});
+            %kegg = map_array2hash(\@temp_array, ":~");
 
-			# if acc has meaning full fxn 1 then set fxnal hit at 1 else 0
-			if (
-				   ( !$cFxn )
-				&& ( defined $c_hash->{fxn1} )
-				&& ( $c_hash->{fxn1} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				&& length( $c_hash->{fxn1} )
-			  )
-			{
-				$cog_row .= "\t1\n";
-				$cFxn = 1;
-			}
-			else { $cog_row .= "\t0\n"; }
+            $new[4] = "KEGG";
+            $new[5] = "60";
+            $new[6] = $kegg{ACCESSION};
+            $new[7] = ((defined $kegg{DESC}) && (length($kegg{DESC}))) ? $kegg{DESC} : "NA";
 
-			push( @cogarray, $cog_row );
-		}
+            if ($has_kegg_fxn) {
+                $kegg{FXN} = 0;
+            } else {
+                $has_kegg_fxn = $kegg{FXN};
+            }
 
-		## CHECK IF SEED IS NOT NULL
-		if (   defined $u_hash->{seed_acc}
-			&& ( length( $utils->trim( $u_hash->{seed_acc} ) ) > 1 )
-			&& ( $u_hash->{seed_acc} !~ /null/i ) )
-		{
+            push (@keggarray, join("\t", @new, $lineage, $kegg{FXN}));
+        }
 
-			#reset array.
-			@arr1 = ();
-			@arr1 = split( /[\t]/, $seqline );
+        #### expand COG informaiton
+        if (exists $data{COG}) {
+            @temp_array = split(/;~/, $data{COG});
+            %cog = map_array2hash(\@temp_array, ":~");
 
-			#split accession by ; if there are multiple acc's
-			my @s_arr = split( /;/, $u_hash->{seed_acc} );
+            $new[4] = "COG";
+            $new[5] = "50";
+            $new[6] = $cog{ACCESSION};
+            $new[7] = ((defined $cog{DESC}) && (length($cog{DESC}))) ? $cog{DESC} : "NA";
 
-			# get acc lookup hash
-			my $s_acc_hash = $utils->get_acc_from_lookup( "seed", $s_arr[0] );
-			my $s_hash     = $s_acc_hash->{acc_data}[0];
+            if ($has_cog_fxn) {
+                $cog{FXN} = 0;
+            } else {
+                $has_cog_fxn = $cog{FXN};
+            }
 
-			$arr1[3]  = q|SEED|;      #replace database name
-			$arr1[4]  = $s_arr[0];    #replace hit_name
-			                          #replace hit_description
-			$arr1[13] =
-			  ( defined $s_hash->{desc} )
-			  ? $utils->trim( $s_hash->{desc} )
-			  : 'UNKNOWN';
+            push (@cogarray, join("\t", @new, $lineage, $cog{FXN}));
+        }
 
-			my $seed_row .= join( "\t", @arr1 ) . "\t" . $taxonomy;
+        #### expand ACLAME informaiton
+        if (exists $data{ACLAME}) {
+            @temp_array = split(/;~/, $data{ACLAME});
+            %aclame = map_array2hash(\@temp_array, ":~");
 
-			# if acc has meaning full fxn 1 then set fxnal hit at 1 else 0
-			if (
-				   ( !$sFxn )
-				&& ( defined $s_hash->{fxn1} )
-				&& ( $s_hash->{fxn1} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				&& length( $s_hash->{fxn1} )
-			  )
-			{
-				$seed_row .= "\t1\n";
-				$sFxn = 1;
-			}
-			else { $seed_row .= "\t0\n"; }
+            $new[4] = "ACLAME";
+            $new[5] = "90";
+            $new[6] = $aclame{ACCESSION};
+            $new[7] = ((defined $aclame{DESC}) && (length($aclame{DESC}))) ? $aclame{DESC} : "NA";
 
-			push( @seedarray, $seed_row );
-		}
+            if ($has_aclame_fxn) {
+                $aclame{FXN} = 0;
+            } else {
+                $has_aclame_fxn = $aclame{FXN};
+            }
 
-		## CHECK IF PHGSEED IS NOT NULL
-		if (   defined $u_hash->{phgseed_acc}
-			&& ( length( $utils->trim( $u_hash->{phgseed_acc} ) ) > 1 )
-			&& ( $u_hash->{phgseed_acc} !~ /null/i ) )
-		{
+            push (@aclamearray, join("\t", @new, $lineage, $aclame{FXN}));
+        }
 
-			#reset array.
-			@arr1 = ();
-			@arr1 = split( /[\t]/, $seqline );
+        #### expand PHGSEED informaiton
+        if (exists $data{PHGSEED}) {
+            @temp_array = split(/;~/, $data{PHGSEED});
+            %phgseed = map_array2hash(\@temp_array, ":~");
 
-			#split accession by ; if there are multiple acc'
-			my @p_arr = split( /;/, $u_hash->{phgseed_acc} );
+            $new[4] = "PHGSEED";
+            $new[5] = "80";
+            $new[6] = $phgseed{ACCESSION};
+            $new[7] = ((defined $phgseed{DESC}) && (length($phgseed{DESC}))) ? $phgseed{DESC} : "NA";
 
-			# get acc lookup
-			my $p_acc_hash =
-			  $utils->get_acc_from_lookup( "phgseed", $p_arr[0] );
-			my $p_hash = $p_acc_hash->{acc_data}[0];
+            if ($has_phgseed_fxn) {
+                $phgseed{FXN} = 0;
+            } else {
+                $has_phgseed_fxn = $phgseed{FXN};
+            }
 
-			$arr1[3]  = q|PHGSEED|;    #replace database
-			$arr1[4]  = $p_arr[0];     #replace hit_name
-			                           #replace hit_description
-			$arr1[13] =
-			  ( defined $p_hash->{desc} )
-			  ? $utils->trim( $p_hash->{desc} )
-			  : 'UNKNOWN';
+            push (@phgseedarray, join("\t", @new, $lineage, $phgseed{FXN}));
+        }
+    }
 
-			my $phgseed_row .= join( "\t", @arr1 ) . "\t" . $taxonomy;
+    ####PRINT UNIREF FIRST
+    foreach my $unirefline (@unirefarray) {
+        print OUT $unirefline."\n";
+    }
 
-			# if acc has meaning full fxn 1 then set fxnal hit at 1 else
-			if (
-				   ( !$pFxn )
-				&& ( defined $p_hash->{fxn1} )
-				&& ( $p_hash->{fxn1} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				&& length( $p_hash->{fxn1} )
-			  )
-			{
-				$phgseed_row .= "\t1\n";
-				$pFxn = 1;
-			}
-			else { $phgseed_row .= "\t0\n"; }
+    foreach my $aclameline (@aclamearray) {
+        print OUT $aclameline."\n";
+    }
 
-			push( @phgseedarray, $phgseed_row );
-		}
+    foreach my $phgseedline (@phgseedarray) {
+        print OUT $phgseedline."\n";
+    }
 
-		## CHECK IF ACLAME IS NOT NULL
-		if (   defined $u_hash->{aclame_acc}
-			&& ( length( $utils->trim( $u_hash->{aclame_acc} ) ) > 1 )
-			&& ( $u_hash->{aclame_acc} !~ /null/i ) )
-		{
+    foreach my $seedline (@seedarray) {
+        print OUT $seedline."\n";
+    }
 
-			#reset array.
-			@arr1 = ();
-			@arr1 = split( /[\t]/, $seqline );
+    foreach my $keggline (@keggarray) {
+        print OUT $keggline."\n";
+    }
 
-			#split accession by ; if there are multiple acc's
-			my @a_arr = split( /;/, $u_hash->{aclame_acc} );
-
-			# get acc lookup hash
-			my $a_acc_hash = $utils->get_acc_from_lookup( "aclame", $a_arr[0] );
-			my $a_hash     = $a_acc_hash->{acc_data}[0];
-
-			$arr1[3]  = q|ACLAME|;    #replace database name
-			$arr1[4]  = $a_arr[0];    #replace hit_name
-			                          #replace hit_description
-			$arr1[13] =
-			  ( defined $a_hash->{desc} )
-			  ? $utils->trim( $a_hash->{desc} )
-			  : 'UNKNOWN';
-
-			my $aclame_row = join( "\t", @arr1 ) . "\t" . $taxonomy;
-
-			# if acc has meaning full fxn 1 then set fxnal hit at 1 else 0
-			if (
-				   ( !$aFxn )
-				&& ( defined $a_hash->{fxn1} )
-				&& ( $a_hash->{fxn1} !~
-					/unknown|unclassified|unassigned|uncharacterized/i )
-				&& length( $a_hash->{fxn1} )
-			  )
-			{
-				$aclame_row .= "\t1\n";
-				$aFxn = 1;
-			}
-			else { $aclame_row .= "\t0\n"; }
-
-			push( @aclamearray, $aclame_row );
-		}
-
-	}    ##END OF ITERATING THROUGH ALL UNIREF RECORDS FOR A ACCESSION
-
-	##PRINT UNIREF FIRST
-	foreach my $unirefline (@unirefarray) {
-		print OUT $unirefline;
-	}
-
-	foreach my $aclameline (@aclamearray) {
-		print OUT $aclameline;
-	}
-
-	foreach my $seedline (@seedarray) {
-		print OUT $seedline;
-	}
-	foreach my $phgseedline (@phgseedarray) {
-		print OUT $phgseedline;
-	}
-	foreach my $keggline (@keggarray) {
-		print OUT $keggline;
-	}
-
-	foreach my $cogline (@cogarray) {
-		print OUT $cogline;
-	}
+    foreach my $cogline (@cogarray) {
+        print OUT $cogline."\n";
+    }
 }
 
 ##############################################################################
 sub modifyDescription {
-	my $seqline = $_[0];
-	my @arr     = split( /[\t]/, $seqline );
+    my $seqline = shift;
 
+	my @hsp = split(/\t/, $seqline);
+	#my $sequenceId = $sequenceLookup{$hsp[0]};
+    my $sequenceId = "S2";
 	my $str = "";
 
-	#get mgol hash entry from hit_name ($arr[4]) prefix
-	my $mgol_acc_hash =
-	  $utils->get_acc_from_lookup( "mgol", substr( $arr[4], 0, 3 ) );
+    #### re-arrange all element as expected by sqlite blastp table
+    #### resulting array look like
+    ####
+    #### 0: sequenceId
+    #### 1: qname
+    #### 2: qlen
+    #### 3: algo
+    #### 4: dname
+    #### 5: db_ranking
+    #### 6: hname
+    #### 7: hdesc
+    #### 8: qstart
+    #### 9: qend
+    #### 10: hstart
+    #### 11: hend
+    #### 12: pident
+    #### 13: psim
+    #### 14: rscr
+    #### 15: bscr
+    #### 16: blast frame    # dummy place holder to delete later
+    #### 17: query strand   # dummy place holder to delete later
+    #### 18: slen
+    #### 19: eval
 
-	if ( defined $mgol_acc_hash ) {
-		my $mgol_hash = $mgol_acc_hash->{acc_data}[0];
-		my $dwel      = "N/A";
+    my @new = $sequenceId;    # sequenceid add to array
+    push (@new, @hsp[0..1]);  # query_name and query_length added
+    push (@new, "BLASTP");    # algorithm added
+    push (@new, $hsp[2]);     # database name
+    push (@new, 10);          # db ranking system
 
-		if ( $mgol_hash->{org_subst} ne "UNKNOWN" ) {
-			$dwel = 'dwelling ' . $mgol_hash->{org_subst};
-		}
-		else {
-			$dwel = $mgol_hash->{phys_subst};
-		}
+    push (@new, @hsp[3..$#hsp]);
 
-		$str = "$mgol_hash->{lib_type} metagenome from $mgol_hash->{ecosystem} $dwel ";
-		$str .= "near $mgol_hash->{geog_place_name}, $mgol_hash->{country} [library: $mgol_hash->{lib_shortname}]";
-		$str =~ s/'|"//g;
+    @new = map {$util->trim($_)} @new;
+
+	return join("\t", @new);
+}
+
+#############################################################################
+sub modify_old_delim {
+	my $str = shift;
+
+	$str =~ s/\|\|/\|~\|/g;
+
+	$str =~ s/PHGSEED=ACCESSION:/PHGSEED=~ACCESSION:~/ig;
+	$str =~ s/SEED=ACCESSION:/SEED=~ACCESSION:~/ig;
+	$str =~ s/KEGG=ACCESSION:/KEGG=~ACCESSION:~/ig;
+	$str =~ s/COG=ACCESSION:/COG=~ACCESSION:~/ig;
+	$str =~ s/ACLAME=ACCESSION:/ACLAME=~ACCESSION:~/ig;
+	$str =~ s/UNIREF=ACCESSION:/UNIREF=~ACCESSION:~/ig;
+
+
+	$str =~ s/;DESC:/;~DESC:~/ig;
+	$str =~ s/;FXN:/;~FXN:~/ig;
+
+	$str =~ s/LINEAGE=DOMAIN:/LINEAGE=~DOMAIN:~/ig;
+	$str =~ s/;KINGDOM:/;~KINGDOM:~/ig;
+	$str =~ s/;PHYLUM:/;~PHYLUM:~/ig;
+	$str =~ s/;CLASS:/;~CLASS:~/ig;
+	$str =~ s/;ORDER:/;~ORDER:~/ig;
+	$str =~ s/;FAMILY:/;~FAMILY:~/ig;
+	$str =~ s/;GENUS:/;~GENUS:~/ig;
+	$str =~ s/;SPECIES:/;~SPECIES:~/ig;
+	$str =~ s/;ORGANISM:/;~ORGANISM:~/ig;
+
+	return $str;
+}
+
+#############################################################################
+sub map_array2hash {
+	my $array = shift;
+	my $delim = shift;
+
+	my @n = @{$array};
+
+	my %hash;
+
+	foreach my $elm (@n) {
+		my @a = split(/$delim/, $elm);
+
+		$hash{$a[0]} = $a[1];
 	}
 
-	$arr[13] = $str;
-	return join( "\t", @arr );
+	return %hash;
 }

@@ -64,7 +64,6 @@ use warnings;
 use DBI;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
-use UTILS_V;
 use Bio::SeqIO;
 
 BEGIN {
@@ -75,8 +74,7 @@ BEGIN {
 my %options = ();
 my $results = GetOptions (\%options,
                           'input|i=s',
-						  'outdir|od=s',
-                          'libListFile|ll=s',
+						  'outdir|o=s',
 						  'typeId|t=s',
                           'log|l=s',
                           'debug|d=s',
@@ -104,11 +102,7 @@ unless(-s $options{input} > 0){
 
 ##############################################################################
 
-my $utils = new UTILS_V;
 my $filename = $options{outdir}."/sequence.txt";
-
-## check if corresponding library exists.
-my $libraryId = $utils->get_libraryId_from_list_file($options{input},$options{libListFile},"fasta");
 
 #use Bio::SeqIO to parse and handle fasta file.
 my $fsa = Bio::SeqIO->new( -file   => $options{input},
@@ -116,10 +110,10 @@ my $fsa = Bio::SeqIO->new( -file   => $options{input},
 
 open (OUT, ">>", $filename) || die $logger->logdie("Could not open file $filename");
 
-while (my $seq = $fsa->next_seq){
+while (my $seq = $fsa->next_seq) {
 	my $gc = &calculate_gc($seq->seq());
 
-	print OUT join("\t", $libraryId, $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), $options{typeId})."\n";
+	print OUT join("\t", "1", $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), $options{typeId})."\n";
 }
 
 close OUT;
@@ -128,7 +122,7 @@ exit(0);
 ###############################################################################
 sub check_parameters {
 	## at least one input type is required
-	unless ( $options{input} && $options{outdir} && $options{libListFile} && $options{typeId}) {
+	unless ( $options{input} && $options{outdir} && $options{typeId}) {
 		pod2usage({-exitval => 2, -message => "error message", -verbose => 1, -output => \*STDERR});
 		$logger->logdie("No input defined, plesae read perldoc $0\n\n");
 		exit(1);

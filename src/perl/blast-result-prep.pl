@@ -95,24 +95,23 @@ use UTILS_V;
 use File::Basename;
 use Data::Dumper;
 
-#BEGIN {
-#  use Ergatis::Logger;
-#}
+BEGIN {
+    use Ergatis::Logger;
+}
 
 my %options = ();
 my $results = GetOptions (\%options,
                           'input|i=s',
-                          'outdir|od=s',
-                          'liblist|ll=s',
-                          'lookupDir|ld=s',
+                          'output_dir|o=s',
+                          'database|b=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
 
-#my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
-#my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
-#                                  'LOG_LEVEL'=>$options{'debug'});
-#$logger = $logger->get_logger();
+my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
+my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
+                                 'LOG_LEVEL'=>$options{'debug'});
+$logger = $logger->get_logger();
 
 ## display documentation
 if( $options{'help'} ){
@@ -123,172 +122,115 @@ if( $options{'help'} ){
 ## make sure everything passed was peachy
 &check_parameters(\%options);
 
-#if file size is greater than 0, mostly a check for rRNA blast.
+#### proceed if file size is greater than 0, mostly a check for rRNA blast.
 unless(-s $options{input} > 0){
     print STDERR "This file $options{input} seem to be empty nothing therefore nothing to do.";
-    #$logger->debug("This file $options{input} seem to be empty nothing therefore nothing to do.");
+    $logger->debug("This file $options{input} seem to be empty nothing therefore nothing to do.");
     exit(0);
 }
 
 ##############################################################################
 my $utils = new UTILS_V;
-my $libraryId = $utils->get_libraryId_from_list_file($options{input},$options{liblist},"blast");
-my $lookup_file = $options{'lookupDir'}."/sequence_".$libraryId.".ldb";
+my $max_id = 0;
 
-my $name = fileparse($options{input}, ".modified.btab");
-my $filename = $options{outdir} ."/". $name . ".blast.btab";
-
-# tie in sequence lookup db.
-tie(my %sequenceLookup, 'MLDBM', $lookup_file);
-
-#print Dumper(\%sequenceLookup);
-#exit();
-
-$utils->set_sequence_lookup(\%sequenceLookup);
-
-## name
+#### name
 my $prev_seq="";
 my $curr_seq="";
 my $prev_db="";
 my $curr_db="";
-my $topHit=0;
+my @empty_lineage = ("", "", "", "", "", "", "", "", "");
 
-# temp filename assignment
-#my $filename = $options{outdir}."/blast-results.tab";
+my $filename = fileparse($options{input}, qr/\.[^.]*/);
 
-my ($qname, $qlen, $algo, $dname, $hname, $hdesc, $qstart, $qend, $hstart, $hend);
-my ($pident, $psim, $rscr, $bscr, $bframe, $qstrand, $slen, $eval, $fxn_topHit);
-my ($dom, $kin, $phl, $cls, $ord, $fam, $gen, $spe, $org, $hit, $db_ranking);
+#### open handler to read input file.
+open (DAT, "<", $options{input}) or $logger->logdie("Could not open file $options{input}");
+open (OUT, ">", $options{output_dir} . "/" . $filename .".btab") or $logger->logdie("Could not open file ". $options{output_dir} . "/" . $filename .".btab");
 
-$qname=$qlen=$algo=$dname=$hname=$hdesc=$qstart=$qend=$hstart=$hend = '';
-$pident=$psim=$rscr=$bscr=$bframe=$qstrand=$slen=$eval = '';
-$dom=$kin=$phl=$cls=$ord=$fam=$gen=$spe=$org= '';
-$hit=1;
-$db_ranking=0;
-$fxn_topHit=0;
+#### database connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
-## open handler to read input file.
-open (DAT, "<", $options{input}) || die; #$logger->logdie("Could not open file $options{input}");
-open (OUT, ">", $filename) || die; # $logger->logdie("Could not open file $filename");
+my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
+$sth->execute;
 
-#loop through input and upload them to db
-print "Starting updates...\n";
-# print "Total # of bytes to process: $total_bytes\n";
+while ( my $result = $sth->fetchrow_hashref() ) {
+	if (defined $result->{max_id}) {
+		$max_id = $result->{max_id} + 1;
+	} else {
+		$max_id = 1;
+	}
+}
 
-while (<DAT>){
-    unless (/^#/) {
+my $timestamp = getTimeStamp();
 
-        my $line = $_;
-        chomp $line;
+while (<DAT>) {
+	next if ($_ =~ /^#/);
 
-        my @info = split (/\t/, $line);
-        my $sequenceId = $utils->get_sequenceId($info[0]);
+	my $topHit = 0;
+	my $fxnHit = 0;
+	my $line = $_;
 
-        #print $sequenceId."\t".$info[0]."\n";
-        #exit();
+    chomp $line;
 
-        #update on 10/6/10 by Jaysheel, assuming that input comes from
-        #clean_expand_btab.pl file. Which will format ncbi-blast btab file
-        #to proper standard for virome blastx/n/p tables.
+    my @info = split (/\t/, $line);
 
-        #if array length is of size 17 or 18 elements then its a METAGENOMES
-        #output with out any taxonomy data.
-        #else its a UNIREF100P formated blast result.
+    #### check if self blast result
+    if ($info[1] ne $info[6]) {
+		#### create an in order array to print
+		my @to_print_array = $max_id;
 
-        if ($#info == 27){
-            $dom = $utils->trim($info[18]);
-            $kin = $utils->trim($info[19]);
-            $phl = $utils->trim($info[20]);
-            $cls = $utils->trim($info[21]);
-            $ord = $utils->trim($info[22]);
-            $fam = $utils->trim($info[23]);
-            $gen = $utils->trim($info[24]);
-            $spe = $utils->trim($info[25]);
-            $org = $utils->trim($info[26]);
-            $fxn_topHit = $utils->trim($info[27]);
-        }
+		push(@to_print_array, @info[0..19]);
 
-        $qname = $utils->trim($info[0]);
-        $qlen = $utils->trim($info[1]);
-        $algo = $utils->trim($info[2]);
-        $dname = $utils->trim($info[3]);
-        $hname = $utils->trim($info[4]);
-        $qstart = $utils->trim($info[5]);
-        $qend = $utils->trim($info[6]);
-        $hstart = $utils->trim($info[7]);
-        $hend = $utils->trim($info[8]);
-        $pident = $utils->trim($info[9]);
-        $psim = $utils->trim($info[10]);
-        $rscr = $utils->trim($info[11]);
-        $bscr = $utils->trim($info[12]);
-        $hdesc = $utils->trim($info[13]);
-        $bframe = $utils->trim($info[14]);
-        $qstrand = $utils->trim($info[15]);
-        $slen = $utils->trim($info[16]);
-        $eval = $utils->trim($info[17]);
+		#### if this is an UNIREF HIT then append functional taxonomy
+		if ($#info > 19) {
+			push (@to_print_array, @info[20..28]);
 
-        ## end update 10/6/10
+			$fxnHit = $info[29];
+		} else {
+			push (@to_print_array, @empty_lineage);
+		}
 
-        # check if self blast result
-        if ($qname ne $hname) {
+		#### check if this is the first hit, and set tophit flag
+		$curr_seq = $info[1];
+		$curr_db = $info[4];
 
-            # check if this is the first hit, and set tophit flag
-            $curr_seq = $qname;
-            $curr_db = $dname;
+		if (($curr_seq ne $prev_seq) || ($curr_db ne $prev_db)) {
+			$topHit = 1;
 
-            if (($curr_seq ne $prev_seq) || ($curr_db ne $prev_db)){
-                $topHit = 1;
-                $prev_seq = $curr_seq;
-                $prev_db = $curr_db;
-            } else {
-                $topHit = 0;
-            }
+			$prev_seq = $curr_seq;
+			$prev_db = $curr_db;
+		}
 
-            # db ranking system
-            if ($dname =~ /uniref100p/i){
-                $db_ranking = 100;
-            } elsif ($dname =~ /aclame/i){
-                $db_ranking = 90;
-            } elsif ($dname =~ /phgseed/i){
-            	$db_ranking = 80;
-            } elsif ($dname =~ /seed/i){
-                $db_ranking = 70;
-            } elsif ($dname =~ /kegg/i){
-                $db_ranking = 60;
-            } elsif ($dname =~ /cog/i){
-                $db_ranking = 50;
-            } elsif ($dname =~ /metagenomes/i){
-                $db_ranking = 10;
-            }
+		print OUT join("\t", @to_print_array, $topHit, $fxnHit, $timestamp, "0000-00-00 00:00:00", 0). "\n";
 
-            #output data to tab file for import.
-            print OUT join("\t",$qname, $qlen, $algo, $dname, $hname,
-            	  $qstart, $qend, $hstart, $hend, $pident, $psim,
-            	  $rscr, $bscr, $hdesc, $bframe, $qstrand, $slen, $eval,
-            	  $dom, $kin, $phl, $cls, $ord, $fam, $gen, $spe, $org,
-            	  $sequenceId, $topHit, $db_ranking, $fxn_topHit);
-            print OUT "\n";
-        } # end check for self blast.
-        else {
-            print "SELF BLAST : \n@info\n\n";
-        }
+		$max_id++;
+    } #### end check for self blast.
+    else {
+		$logger->info("WARNING: SELF BLAST :$info[1]---$info[6]");
+    }
 
-    } #end check for comments
 } #end while loop
 
-#close file handlers
-untie(%sequenceLookup);
 close DAT;
 close OUT;
+
+$logger->info("BLAST RESULT PREP for $options{sample} complete");
 
 exit(0);
 
 ##############################################################################
 sub check_parameters {
-  ## at least one input type is required
-  unless ($options{input} && $options{outdir} && $options{lookupDir} && $options{liblist}){
-      pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-      #$logger->logdie("No input defined, plesae read perldoc $0\n\n");
-      exit(1);
-  }
+    ## at least one input type is required
+    unless ($options{input} && $options{output_dir} && $options{database}){
+        pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
+        $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+    }
+}
+
+###############################################################################
+sub getTimeStamp{
+	my $ts = `date +"%Y-%m-%d %H:%M:%S"`;
+
+	chomp $ts;
+
+	return $ts;
 }
