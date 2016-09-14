@@ -28,7 +28,7 @@ B<--liblist, -ll>
 
 B<--lookupDir, -ld>
     Dir where all lookup files are stored.
-    
+
 B<--debug,-d>
     Debug level.  Use a large number to turn on verbose debugging.
 
@@ -100,7 +100,7 @@ unless(-s $options{input} > 0){
   exit(0);
 }
 
-my $libraryId = $utils->get_libraryId_from_list_file($options{input},$options{liblist},"metagene");
+my $libraryId = 1;
 my $lookup_file = $options{'lookupDir'}."/sequence_".$libraryId.".ldb";
 
 # tie in sequence lookup db.
@@ -125,102 +125,102 @@ my $filename = $options{outdir}."/orf.txt";
 open (DAT, "<", $options{input}) || die $logger->logdie("Could not open file $options{input}\n");
 open (OUT, ">>", $filename) || die $logger->logdie("Could not open file $filename\n");
 
-while (<DAT>){
+while (<DAT>) {
     chomp $_;
     undef @info;
-    
-    if (/^#/){
-      $gene_num = 0;
 
-      if ($headLine > 2){
-	#there is no gene prediction for the current name;
-	print STDERR "No gene prediction for gene $name\n";
-	$logger->debug("No gene prediction for gene $name\n");
-	$headLine=0;
-	$gene_num=0;
-	$readId=0;
-	$seqId=0;
-	undef @info;
-      }
+    if (/^#/) {
+        $gene_num = 0;
 
-      ## read and parse header info
-      if ($headLine == 0){
-	@info = split(/ /, $_);
-	$name = $info[1];
-    
-        ## get sequenceId.
-	$readId = $utils->get_sequenceId($name);
-      }
-      if ($headLine == 1){
-	@info = split(/,/, $_);
-	## get gc number from $info[0] i.e # gc = 0.0000
-	if ($info[0] =~ m/[+-]?(\d+\.\d+|\d+\.|\.\d+)/){
-	  $gc = $1;
-	}
-	## get rbs number from $info[1] i.e rbs = -1
-	if ($info[1] =~ m/([+-]?\d+)/){
-	  $rbs = $1;
-	}
-      }
-      if ($headLine == 2){
-	#skipping self: - line
-      }
-      
-      $headLine += 1;
+        if ($headLine > 2){
+        	#### there is no gene prediction for the current name;
+        	print STDERR "No gene prediction for gene $name\n";
+        	$logger->debug("No gene prediction for gene $name\n");
+        	$headLine=0;
+        	$gene_num=0;
+        	$readId=0;
+        	$seqId=0;
+        	undef @info;
+        }
+
+        #### read and parse header info
+        if ($headLine == 0) {
+        	@info = split(/ /, $_);
+        	$name = $info[1];
+
+            ## get sequenceId.
+	       $readId = $utils->get_sequenceId($name);
+       }
+
+       if ($headLine == 1) {
+           @info = split(/,/, $_);
+           ## get gc number from $info[0] i.e # gc = 0.0000
+           if ($info[0] =~ m/[+-]?(\d+\.\d+|\d+\.|\.\d+)/){
+               $gc = $1;
+           }
+
+           ## get rbs number from $info[1] i.e rbs = -1
+           if ($info[1] =~ m/([+-]?\d+)/){
+               $rbs = $1;
+           }
+       }
+       if ($headLine == 2){
+           #skipping self: - line
+       }
+
+       $headLine += 1;
+    } elsif (length($_)) {
+        ## reset header line number
+        $headLine = 0;
+        $gene_num += 1;
+        my $n = "";
+
+        ## read and prase gene
+        @info = split(/\t/, $_);
+
+        ## store gene info.
+        my $type = getORFType($utils->trim($info[5]));
+        my $model = getModel($utils->trim($info[7]));
+
+        $info[8] = ($info[8] eq "-") ? 0 : $info[8];
+        $info[9] = ($info[9] eq "-") ? 0 : $info[9];
+        $info[10] = ($info[10] eq "-") ? 0.00 : $info[10];
+
+        #set name as $name_$start_$stop_$gene_num;
+        if ($utils->trim($info[3]) eq '-') {
+            $n = $name ."_".$info[2]."_".$info[1]."_".$gene_num;
+        } else {
+            $n = $name ."_".$info[1]."_".$info[2]."_".$gene_num;
+        }
+
+        #get sequenceId
+        $seqId = $utils->get_sequenceId($n);
+
+        #make sure start < end.
+        $info[1] = $utils->trim($info[1]);
+        $info[2] = $utils->trim($info[2]);
+
+        if ($info[1] > $info[2]) {
+        	my $tmp = $info[1];
+        	$info[1] = $info[2];
+        	$info[2] = $tmp;
+        	$info[3] = "-";
+        }
+
+        print OUT join("\t",$readId, $seqId, $utils->trim($n), $utils->trim($gene_num), $utils->trim($gc),
+             $utils->trim($rbs), $utils->trim($info[1]), $utils->trim($info[2]), $utils->trim($info[3]),
+             $utils->trim($info[4]), $utils->trim($type), $utils->trim($info[6]), $utils->trim($model),
+             $utils->trim($info[8]), $utils->trim($info[9]), $utils->trim($info[10]), 'MetaGENE')."\n";
+    } else {
+        print STDERR "ERROR empty line encounted in file.";
+        $logger->debug("ERROR empty line encounted in file.");
+        $headLine=0;
+        $gene_num=0;
+        $readId=0;
+        $seqId=0;
+        undef @info;
     }
-    elsif (length($_)) {
-      ## reset header line number
-      $headLine = 0;
-      $gene_num += 1;
-      my $n = "";
-      
-      ## read and prase gene
-      @info = split(/\t/, $_);
-            
-      ## store gene info.
-      my $type = getORFType($utils->trim($info[5]));
-      my $model = getModel($utils->trim($info[7]));
-      
-      $info[8] = ($info[8] eq "-") ? 0 : $info[8];
-      $info[9] = ($info[9] eq "-") ? 0 : $info[9];
-      $info[10] = ($info[10] eq "-") ? 0.00 : $info[10];
-      
-      #set name as $name_$start_$stop_$gene_num;
-      if ($utils->trim($info[3]) eq '-'){
-	$n = $name ."_".$info[2]."_".$info[1]."_".$gene_num;
-      } else {
-	$n = $name ."_".$info[1]."_".$info[2]."_".$gene_num;
-      }
-      
-      #get sequenceId
-      $seqId = $utils->get_sequenceId($n);
 
-	#make sure start < end.
-	$info[1] = $utils->trim($info[1]);
-	$info[2] = $utils->trim($info[2]);
-
-	if ($info[1] > $info[2]){
-		my $tmp = $info[1];
-		$info[1] = $info[2];
-		$info[2] = $tmp;
-		$info[3] = "-";
-	}
-      
-      print OUT join("\t",$readId, $seqId, $utils->trim($n), $utils->trim($gene_num), $utils->trim($gc),
-		     $utils->trim($rbs), $utils->trim($info[1]), $utils->trim($info[2]), $utils->trim($info[3]),
-		     $utils->trim($info[4]), $utils->trim($type), $utils->trim($info[6]), $utils->trim($model),
-		     $utils->trim($info[8]), $utils->trim($info[9]), $utils->trim($info[10]), 'MetaGENE')."\n";
-    }
-    else {
-      print STDERR "ERROR empty line encounted in file.";
-      $logger->debug("ERROR empty line encounted in file.");
-      $headLine=0;
-      $gene_num=0;
-      $readId=0;
-      $seqId=0;
-      undef @info;
-    }
-    
 }
 
 #close file handlers
@@ -233,19 +233,30 @@ exit(0);
 
 ##############################################################################
 sub check_parameters {
+
+    #### make sure sample_file and output_dir were passed
+    my @required = qw(input outdir lookupDir);
+
+	foreach my $key (@required) {
+		unless ($options{$key}) {
+			pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+		    $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+	}
+
   ## at least one input type is required
   unless ($options{input} && $options{outdir} && $options{lookupDir} && $options{liblist}){
       pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
       $logger->logdie("No input defined, plesae read perldoc $0\n\n");
       exit(1);
   }
-  
+
 }
 
 ##############################################################################
 sub getORFType{
   my $type = $_[0];
-  
+
   if ($type == 11){
     return "complete";
   }
@@ -264,7 +275,7 @@ sub getORFType{
 ##############################################################################
 sub getModel{
   my $model = $_[0];
-  
+
   if ($model =~ m/s/i){
     return "self";
   }

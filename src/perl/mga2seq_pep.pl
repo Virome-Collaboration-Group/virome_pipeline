@@ -67,7 +67,6 @@ my %options = ();
 my $results = GetOptions (\%options,
                           'input|i=s',
 						  'mga|m=s',
-						  'prefix|p=s',
 						  'outdir|o=s',
                           'log|l=s',
                           'debug|d=s',
@@ -105,14 +104,14 @@ my $i=0;
 my $mark=0;
 my ($rbs, $pairing, $model, @tp, $line);
 
-open(NOPREDICT, ">".$options{outdir}."/".$options{prefix}.".no_prediction.list") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.no_prediction.list");
-open(SEQ, ">".$options{outdir}."/".$options{prefix}.".seq") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.seq");
-open(PROT, ">".$options{outdir}."/".$options{prefix}.".pep") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.pep");
+my $file = `egrep "$options{input}\\." $options{mga}`;   # modified 4/4/11 SWP
 
-my $file = `egrep "$options{prefix}\\." $options{mga}`;   # modified 4/4/11 SWP
+open(NOPREDICT, ">".$options{outdir}."/".$file.".no_prediction.list") or $logger->logdie("Could not open file $options{outdir}/${file}.no_prediction.list");
+open(SEQ, ">".$options{outdir}."/".$file.".seq") or $logger->logdie("Could not open file $options{outdir}/${file}.seq");
+open(PROT, ">".$options{outdir}."/".$file.".pep") or $logger->logdie("Could not open file $options{outdir}/${file}.pep");
 
 unless (length($file)){
-    $logger->logdie("No metagene output file for $options{prefix}");
+    $logger->logdie("No metagene output file for $options{input}");
     exit(1);
 }
 
@@ -286,6 +285,16 @@ sub printSEQ
 } # printSEQ
 
 sub check_parameters {
+    #### make sure sample_file and output_dir were passed
+    my @required = qw(input mga outdir);
+
+	foreach my $key (@required) {
+		unless ($options{$key}) {
+			pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+		    $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+	}
+
     ## at least one input type is required
     unless ( $options{input} && $options{mga} && $options{prefix} && $options{outdir}) {
 		$logger->logdie("Missing input, plesae read perldoc $0\n\n");

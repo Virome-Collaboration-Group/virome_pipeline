@@ -35,9 +35,9 @@ B<--help,-h>
 	bjaysheel@gmail.com
 
 ==head1 EXAMPLE
-   nt_fasta_check.pl -i=input.fsa -o=/output_dir -ll=library_list_file
+   nt_fasta_check.pl -i=input.fsa -o=/output_dir
    or
-   nt_fasta_check.pl -i=input.fsa -o=/output_dir -lf=library_file
+   nt_fasta_check.pl -i=input.fsa -o=/output_dir
 
 =cut
 
@@ -79,7 +79,7 @@ $logger = $logger->get_logger();
 &check_parameters(\%options);
 
 my $count=0;
-my $filebase = fileparse($options{fasta},  qr/\.[^.]*/););
+my $filebase = fileparse($options{input},  qr/\.[^.]*/);
 my ($warn1,$warn2,$warn3,$warn4,$warn5) = (0,0,0,0,0);
 
 my $final_output=$options{output_dir}."/".$filebase.".edited.fsa";
@@ -140,7 +140,7 @@ sub check_parameters {
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {
-			pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
+			pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
 			$logger->logdie("Inputs not defined, plesae read perldoc $0\n");
 		}
 	}

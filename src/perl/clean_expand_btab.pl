@@ -218,9 +218,13 @@ sub check_parameters {
 	my $options = shift;
 
 	#### make sure sample_file and output_dir were passed
-	unless ( $options{input} && $options{database} && $options{output_dir} ) {
-        pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-		$logger->logdie("No input defined, plesae read perldoc $0\n\n");
+    my @required = qw(input output_dir database);
+
+	foreach my $key (@required) {
+		unless ($options{$key}) {
+			pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+		    $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
 	}
 }
 

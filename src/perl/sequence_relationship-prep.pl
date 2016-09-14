@@ -61,7 +61,7 @@ my %options = ();
 my $results = GetOptions (\%options,
 						  'output|o=s',
                           'input|i=s',
-						  'env|e=s',
+                          'database|b=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -84,16 +84,13 @@ if( $options{'help'} ){
 
 #utility moduel
 my $utils = new UTILS_V;
-my $libraryId = $utils->get_libraryId_from_file($options{input});
-
-$utils->set_db_params($options{env});
+my $libraryId = 1;
 
 #set output file
 open (OUT, ">", $options{output}) || die $logger->logdie("Could not open file $options{output}");
 
 #init db connection
-my $dbh = DBI->connect("DBI:mysql:database=".$utils->db_name.";host=".$utils->db_host,
-	    $utils->db_user, $utils->db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
 my $sel_qry = qq|SELECT id,name FROM sequence WHERE deleted=0 and libraryId=? and typeId=?|;
 
@@ -103,7 +100,7 @@ my %read_hash;
 
 #get all reads.
 my $seq_sth = $dbh->prepare($sel_qry);
-$seq_sth->execute($libraryId,1);
+$seq_sth->execute($libraryId, 1);
 
 while (my $read = $seq_sth->fetchrow_hashref){
 	print OUT ($$read{id}."\t".$$read{id}."\t1\n");
@@ -112,7 +109,7 @@ while (my $read = $seq_sth->fetchrow_hashref){
 
 #get all rRNAs.
 $seq_sth = $dbh->prepare($sel_qry);
-$seq_sth->execute($libraryId,2);
+$seq_sth->execute($libraryId, 2);
 
 while (my $rRNA = $seq_sth->fetchrow_hashref){
 	print OUT ($$rRNA{id}."\t".$$rRNA{id}."\t2\n");
@@ -121,7 +118,7 @@ while (my $rRNA = $seq_sth->fetchrow_hashref){
 
 #get all orfs (aa).
 $seq_sth = $dbh->prepare($sel_qry);
-$seq_sth->execute($libraryId,3);
+$seq_sth->execute($libraryId, 3);
 
 while (my $orfaa = $seq_sth->fetchrow_hashref){
 	my $read_name = $$orfaa{name};
@@ -136,7 +133,7 @@ while (my $orfaa = $seq_sth->fetchrow_hashref){
 
 #get all orfs (dna).
 $seq_sth = $dbh->prepare($sel_qry);
-$seq_sth->execute($libraryId,4);
+$seq_sth->execute($libraryId, 4);
 
 while (my $orfnuc = $seq_sth->fetchrow_hashref){
 	print OUT ($orf_hash{$$orfnuc{name}}."\t".$$orfnuc{id}."\t4\n");
@@ -147,10 +144,13 @@ exit(0);
 
 ###############################################################################
 sub check_parameters {
-	## at least one input type is required
-	unless ($options{output} && $options{input} && $options{env}) {
-		pod2usage({-exitval => 2, -message => "error message", -verbose => 1, -output => \*STDERR});
-		$logger->logdie("No input defined, plesae read perldoc $0\n\n");
-		exit(1);
-	}
+
+    my @required = qw(output input database);
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+    }
 }

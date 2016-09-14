@@ -121,15 +121,17 @@ exit(0);
 
 ###############################################################################
 sub check_parameters {
-	## at least one input type is required
-	unless ( $options{input} && $options{outdir} && $options{typeId}) {
-		pod2usage({-exitval => 2, -message => "error message", -verbose => 1, -output => \*STDERR});
-		$logger->logdie("No input defined, plesae read perldoc $0\n\n");
-		exit(1);
-	}
+    my @required = qw(input outdir typeId);
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+    }
 
 	if (($options{typeId} <= 0) || ($options{typeId} > 4)){
-		pod2usage({-exitval => 2, -message => "error message", -verbose => 1, -output => \*STDERR});
+		pod2usage({-exitval => 2, -message => "Sequence type $options{type} not recognized valid values: 1,2,3,4", -verbose => 1, -output => \*STDERR});
 		$logger->logdie("Sequence type $options{type} not recognized valid values: 1,2,3,4\n");
 		exit(1);
 	}

@@ -113,9 +113,13 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    ## make sure sample_file and output_dir were passed
-    unless ($options{fasta} && $options{minlen} && $options{outdir}){
-      pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-      exit(-1);
+    #### make sure sample_file and output_dir were passed
+    my @required = qw(fasta minlen outdir);
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
     }
 }

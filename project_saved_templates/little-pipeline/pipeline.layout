@@ -48,7 +48,7 @@
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
-                <name>db-to-lookup.seq-lookup</name>
+                <name>db-to-lookup.sequence</name>
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
@@ -56,7 +56,7 @@
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
-                <name>db-upload.sequence_relationship-prep</name>
+                <name>db-upload.sequence_relationship</name>
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
