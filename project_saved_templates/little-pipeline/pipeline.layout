@@ -36,11 +36,11 @@
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
-                <name>sequence-prep.orf_nuc</name>
+                <name>db-upload.orf_pep</name>
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
-                <name>db-upload.orf_pep</name>
+                <name>sequence-prep.orf_nuc</name>
             </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>

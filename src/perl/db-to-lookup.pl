@@ -101,7 +101,7 @@ if ($options{table} =~ /sequence/i){
 
 if (length($sel_qry)) {  #table info is passed and expected
     if ($libraryId > 0){  # check for validity of library id
-        my $dbh = DBI->connect("dbi:SQLite:dbname=$options{outdir}/processing.sqlite3", "", "", { RaiseError => 1}) or die $DBI::errstr;
+        my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
         print STDOUT "\n DEBUG: Trying to write to this file:\n\n";
         print STDOUT $options{outdir}."/".$options{table}."_".$libraryId.".ldb" . "\n";

@@ -9,13 +9,21 @@
             <state>incomplete</state>
             <executable>$;MGA2SEQ_PEP_EXEC$;</executable>
             <arg>-i $;I_FILE_PATH$; -m $;MGA_RAW_LIST$;</arg>
-            <param>  
+            <param>
                 <key>--outdir</key>
                 <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;</value>
             </param>
             <param>
                 <key>--prefix</key>
                 <value>$;I_FILE_BASE$;</value>
+            </param>
+            <param>
+                <key>stderr</key>
+                <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stderr</value>
+            </param>
+            <param>
+                <key>stdout</key>
+                <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;I_FILE_BASE$;.$;COMPONENT_NAME$;.stdout</value>
             </param>
         </command>
     </commandSet>

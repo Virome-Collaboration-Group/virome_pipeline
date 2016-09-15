@@ -61,7 +61,6 @@ my %options = ();
 my $results = GetOptions (\%options,
 						  'output|o=s',
                           'input|i=s',
-                          'database|b=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -90,7 +89,7 @@ my $libraryId = 1;
 open (OUT, ">", $options{output}) || die $logger->logdie("Could not open file $options{output}");
 
 #init db connection
-my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
 my $sel_qry = qq|SELECT id,name FROM sequence WHERE deleted=0 and libraryId=? and typeId=?|;
 
@@ -145,7 +144,7 @@ exit(0);
 ###############################################################################
 sub check_parameters {
 
-    my @required = qw(output input database);
+    my @required = qw(output input);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

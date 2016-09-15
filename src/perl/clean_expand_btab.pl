@@ -113,8 +113,9 @@ my %options = ();
 my $results =
   GetOptions( \%options,
             'input|i=s',
-            'database|b=s',
+            'subjectDB|b=s',
             'output_dir|o=s',
+            'seqlookupdir|m=s',
             'log|l=s',
             'debug|d=s',
             'help|h' )
@@ -143,7 +144,7 @@ my $utils = new UTILS_V;
 my $filename = fileparse($options{input}, qr/\.[^.]*/);
 
 open( BTAB, "<", $options{input} ) or $logger->logdie("Can not open file $options{input}");
-open( OUT, ">", $options{output_dir} ."/". $filename .".btab" ) or $logger->logdie("Can not open file to write ".$options{output_dir}."/".$filename.".btab");
+open( OUT, ">", $options{output_dir} ."/". $filename .".modified.btab" ) or $logger->logdie("Can not open file to write ".$options{output_dir}."/".$filename.".modified.btab");
 
 my $prev         = "";
 my $curr         = "";
@@ -155,12 +156,11 @@ my @aclamearray  = ();
 my @seedarray    = ();
 my @phgseedarray = ();
 
-my $lookup_file = "";
 my %sequenceLookup;
+my $libraryId = 1;
 
-if ($options{database} =~ /^uniref100p$|^metagenomes$/i) {
-	$lookup_file = $options{output_dir}."/lookup_dir/sequence_".$libraryId.".ldb";
-	tie(%sequenceLookup, 'MLDBM', $lookup_file);
+if ($options{subjectDB} =~ /^uniref100p$|^metagenomes$/i) {
+	tie(%sequenceLookup, 'MLDBM', $options{seqlookupdir}."/sequence_".$libraryId.".ldb);
 }
 
 while (<BTAB>) {
@@ -170,9 +170,9 @@ while (<BTAB>) {
 	my @tmp = split( /\t/, $btabline );
 
     #### insert database name, qry strand and blast frame into the output line
-	$btabline = join( "\t", @tmp[0..1], $options{database}, @tmp[2..11], "0", "0", @tmp[12..$#tmp] );
+	$btabline = join( "\t", @tmp[0..1], $options{subjectDB}, @tmp[2..11], "0", "0", @tmp[12..$#tmp] );
 
-	if ( $options{database} =~ /^uniref100p$/i ) {
+	if ( $options{subjectDB} =~ /^uniref100p$/i ) {
 		$curr = $tmp[0];
 
 		if ( $curr eq $prev ) {
@@ -194,7 +194,7 @@ while (<BTAB>) {
 			$prev = $curr;
 		}    ##END OF ELSE CONDITION
 	}
-	elsif ( $options{database} =~ /^metagenomes$/i ) {
+	elsif ( $options{subjectDB} =~ /^metagenomes$/i ) {
 		print OUT modifyDescription($btabline) . "\n";
 	}
 	else {
@@ -203,7 +203,7 @@ while (<BTAB>) {
 }    ##END OF BTAB file
 
 #### expand last set of sequences.
-if ( $options{database} =~ /^UNIREF100P$/i ) {
+if ( $options{subjectDB} =~ /^UNIREF100P$/i ) {
 	expand();
 }
 
@@ -218,7 +218,7 @@ sub check_parameters {
 	my $options = shift;
 
 	#### make sure sample_file and output_dir were passed
-    my @required = qw(input output_dir database);
+    my @required = qw(input output_dir subjectDB seqlookup);
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {

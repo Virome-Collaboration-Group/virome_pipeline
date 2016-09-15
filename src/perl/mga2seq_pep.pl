@@ -67,6 +67,7 @@ my %options = ();
 my $results = GetOptions (\%options,
                           'input|i=s',
 						  'mga|m=s',
+                          'prefix|p=s',
 						  'outdir|o=s',
                           'log|l=s',
                           'debug|d=s',
@@ -104,14 +105,14 @@ my $i=0;
 my $mark=0;
 my ($rbs, $pairing, $model, @tp, $line);
 
-my $file = `egrep "$options{input}\\." $options{mga}`;   # modified 4/4/11 SWP
+open(NOPREDICT, ">".$options{outdir}."/".$options{prefix}.".no_prediction.list") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.no_prediction.list");
+open(SEQ, ">".$options{outdir}."/".$options{prefix}.".seq") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.seq");
+open(PROT, ">".$options{outdir}."/".$options{prefix}.".pep") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.pep");
 
-open(NOPREDICT, ">".$options{outdir}."/".$file.".no_prediction.list") or $logger->logdie("Could not open file $options{outdir}/${file}.no_prediction.list");
-open(SEQ, ">".$options{outdir}."/".$file.".seq") or $logger->logdie("Could not open file $options{outdir}/${file}.seq");
-open(PROT, ">".$options{outdir}."/".$file.".pep") or $logger->logdie("Could not open file $options{outdir}/${file}.pep");
+my $file = `egrep "$options{prefix}\\." $options{mga}`;   # modified 4/4/11 SWP
 
 unless (length($file)){
-    $logger->logdie("No metagene output file for $options{input}");
+    $logger->logdie("No metagene output file for $options{prefix}");
     exit(1);
 }
 

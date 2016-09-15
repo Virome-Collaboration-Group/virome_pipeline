@@ -109,7 +109,7 @@ my $max_id = 0;
 #### database connection
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
-my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
+my $sth = $dbh->prepare('SELECT max(id) as max_id FROM sequence');
 $sth->execute;
 
 while ( my $result = $sth->fetchrow_hashref() ) {
