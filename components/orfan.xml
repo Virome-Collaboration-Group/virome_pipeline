@@ -32,7 +32,7 @@
                 </param>
                 <param>
                     <key>--regex</key>
-                    <value>".*\.txt"</value>
+                    <value>".*orfanList_.*\.txt"</value>
                 </param>
                 <param>
                     <key>--output_list</key>
