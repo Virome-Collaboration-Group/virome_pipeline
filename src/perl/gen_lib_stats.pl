@@ -78,15 +78,11 @@ BEGIN {
 
 my %options = ();
 my $results = GetOptions (\%options,
-			  'server|s=s',
-			  'library|b=s',
-			  'env|e=s',
-			  'input|i=s',
-			  'lookupDir|ld=s',
-			  'outdir|o=s',
-			  'log|l=s',
-			  'debug|d=s',
-			  'help|h') || pod2usage();
+            			  'input|i=s',
+            			  'outdir|o=s',
+            			  'log|l=s',
+            			  'debug|d=s',
+            			  'help|h') || pod2usage();
 
 ## display documentation
 if( $options{'help'} ) {
@@ -100,98 +96,53 @@ $logger = $logger->get_logger();
 ##############################################################################
 #### DEFINE GLOBAL VAIRABLES.
 ##############################################################################
-my $dbh1;
-my $dbh;
-my $dbh0;
-
-my $libinfo = LIBInfo->new();
-my $libObject;
-
-my $file_loc = $options{outdir};
-
-my $utils = new UTILS_V;
-$utils->set_db_params($options{env});
-
 ## make sure everything passed was peachy
-&check_parameters(\%options, \$dbh1, \$dbh, \$dbh0);
+&check_parameters(\%options);
 
-#set up look files
-tie(my %mgol_lkp, 'MLDBM', $options{lookupDir}."/mgol.ldb");
+#init db connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
-$utils->mgol_lookup(\%mgol_lkp);
 ##########################################################################
 timer(); #call timer to see when process ended.
 
-####CHNAGE IN LOGIC
-#### remove from query below
-# archaea_cnt, archaea_mb, archaea_id,
-# bacteria_cnt, bacteria_mb, bacteria_id,
-# phage_cnt, phage_mb, phage_id,
-# ?,?,?,
-# ?,?,?,
-# ?,?,?,
-
-my $inst_fxn = $dbh->prepare(qq{INSERT INTO statistics (libraryId,
-                                                         read_cnt, read_mb,
-                                                         complete_cnt, complete_mb, complete_id,
-                                                         incomplete_cnt, incomplete_mb, incomplete_id,
-                                                         lackstart_cnt, lackstart_mb, lackstart_id,
-                                                         lackstop_cnt, lackstop_mb, lackstop_id,
-                                                         allviral_cnt, allviral_id,
-                                                         topviral_cnt, topviral_id,
-                                                         allmicrobial_cnt, allmicrobial_id,
-                                                         topmicrobial_cnt, topmicrobial_id,
-                                                         fxn_cnt, fxn_id,
-                                                         unassignfxn_cnt, unassignfxn_id,
-                                                         tRNA_cnt, tRNA_id,
-                                                         rRNA_cnt, rRNA_id,
-                                                         orfan_cnt, orfan_id,
-                                                         lineage, deleted, dateCreated)
-                                                         VALUES(?,?,?,
-                                                         ?,?,?,
-                                                         ?,?,?,
-                                                         ?,?,?,
-                                                         ?,?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,
-                                                         ?,?,?)
-                                                        });
-
-# my $inst_fxn = $dbh->prepare(qq{INSERT INTO statistics (libraryId,fxn_cnt, fxn_id,
-# 										  unassignfxn_cnt, unassignfxn_id)
-# 							    VALUES(?,?,?,?,?)
-# 							   });
-#
-# my $upd_env = $dbh->prepare(qq{UPDATE statistics set allviral_cnt=?, allviral_id=?, topviral_cnt=?,
-# 										topviral_id=?, allmicrobial_cnt=?, allmicrobial_id=?, topmicrobial_cnt=?,
-# 										topmicrobial_id=?
-# 							   WHERE libraryId=?});
-#
-# my $upd_orf_mod = $dbh->prepare(qq{UPDATE statistics set complete_cnt=?,complete_mb=?,complete_id=?,
-# 						incomplete_cnt=?,incomplete_mb=?,incomplete_id=?,
-# 						lackstart_cnt=?,lackstart_mb=?,lackstart_id=?,
-# 						lackstop_cnt=?,lackstop_mb=?,lackstop_id=?
-# 				  WHERE libraryId=?});
-#
-# my $upd_orf_type = $dbh->prepare(qq{UPDATE statistics set archaea_cnt=?,archaea_mb=?,archaea_id=?,
-# 					 bacteria_cnt=?,bacteria_mb=?,bacteria_id=?,
-# 					 phage_cnt=?,phage_mb=?,phage_id=?
-# 				  WHERE libraryId=?});
-#
-# my $upd_orfan = $dbh->prepare(qq{UPDATE statistics set orfan_cnt=?, orfan_id=? WHERE libraryId=?});
-#
-# my $upd_rest = $dbh->prepare(qq{UPDATE statistics set read_cnt=?,read_mb=?,
-# 						tRNA_cnt=?, tRNA_id=?,
-# 						rRNA_cnt=?, rRNA_id=?,
-# 						lineage=?
-# 				  WHERE libraryId=?});
+my $inst_fxn = $dbh->prepare(qq{INSERT INTO statistics (id, libraryId,
+							 read_cnt, read_mb,
+							 complete_cnt, complete_mb, complete_id,
+							 incomplete_cnt, incomplete_mb, incomplete_id,
+							 lackstart_cnt, lackstart_mb, lackstart_id,
+							 lackstop_cnt, lackstop_mb, lackstop_id,
+							 archaea_cnt, archaea_mb, archaea_id,
+							 bacteria_cnt, bacteria_mb, bacteria_id,
+							 phage_cnt, phage_mb, phage_id,
+							 allviral_cnt, allviral_id,
+							 topviral_cnt, topviral_id,
+							 allmicrobial_cnt, allmicrobial_id,
+							 topmicrobial_cnt, topmicrobial_id,
+							 fxn_cnt, fxn_id,
+							 unassignfxn_cnt, unassignfxn_id,
+							 tRNA_cnt, tRNA_id,
+							 rRNA_cnt, rRNA_id,
+							 orfan_cnt, orfan_id,
+							 lineage, deleted, dateCreated)
+							 VALUES(?,?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,
+							 ?,?,?)
+							});
 
 ####get taxonomy
 my $tax = $dbh->prepare(qq{SELECT b.domain, count(b.domain)
@@ -205,7 +156,7 @@ my $tax = $dbh->prepare(qq{SELECT b.domain, count(b.domain)
 				  and b.sys_topHit = 1
 		       GROUP BY b.domain ORDER BY b.domain desc });
 
-###get all orf sequences
+####get all orf sequences
 my $all_seq = $dbh->prepare(qq{SELECT distinct s.id,s.header,s.size,s.basepair
 			   FROM sequence s
 				INNER JOIN sequence_relationship sr on s.id = sr.objectId
@@ -251,442 +202,396 @@ my $rRNA = $dbh->prepare(qq{SELECT s.id
 			  and s.deleted=0
 			  and sr.typeId=2});
 
-my $lib_sel = $dbh0->prepare(q{SELECT id FROM library WHERE deleted=0 and server=?});
+#### get all top blast hits for a given library
+my $top_hits_stmt = qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking_code
+						   FROM blastp b INNER JOIN sequence s ON s.id=b.sequenceId
+						   WHERE s.libraryId = ?
+							and 	b.e_value <= 0.001
+							and 	(b.database_name = 'UNIREF100P'
+								  OR b.database_name = 'METAGENOMES')
+							and 	b.sys_topHit=1
+							and  s.deleted=0
+							and  b.deleted=0
+						   GROUP BY b.sequenceId
+						   ORDER BY b.sequenceId, db_ranking_code desc};
 
-my $rslt = '';
-my @libArray;
+my $libId = 1;
+my $top_hits_qry = $dbh->prepare($top_hits_stmt);
+$top_hits_qry->execute($libId);
 
-####set library array to process
-if ($options{library} <= 0) {
-    $lib_sel->execute($options{server});
-    $rslt = $lib_sel->fetchall_arrayref({});
+########################################
+# SPLIT SEQUENCE INTO UNIREF100P ONLY
+# AND METAGENOMES ONLY SET AT
+# EVALUE CUTOFF AT 0.001
+########################################
+# get uniref and metagenomes exclusive sequences.
+# top_hits_qry returnes only one row per sequence
+# db_ranking_code 10=UNIREF100P
+#				  10=METAGENOMES
+#
+print STDOUT "Separeate uniref and metagenome hits\n";
 
-    foreach my $lib (@$rslt) {
-        push @libArray, $lib->{'id'};
-    }
-} else {
-    push @libArray, $options{library};
+my(@uniref_arr, @meta_arr);
+my $prev = -1;
+
+while (my $result = $top_hits_qry->fetchrow_hashref()) {
+	if ($$result{db_ranking_code} == 100) {
+		push @uniref_arr, $$result{sequenceId};
+	} else {
+		push @meta_arr , $$result{sequenceId};
+	}
 }
 
-foreach my $libId (@libArray) {
-    print STDOUT "Processing libraryId: $libId\n";
+###########################################
+# GET FUNCTIONAL AND UNASSIGNED FUNCTIONAL
+# CATEGORIES FOR ALL UNIREF100P SEQUENCES
+# AT EVALUE CUTOFF OF 0.001
+###########################################
 
-    #### get all top blast hits for a given library
-    my $top_hits_stmt = qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking_code
-    						  FROM blastp b INNER JOIN sequence s ON s.id=b.sequenceId
-    						  WHERE s.libraryId = ?
-    						   and 	b.e_value <= 0.001
-    						   and 	(b.database_name = 'UNIREF100P'
-    								 OR b.database_name = 'METAGENOMES')
-    						   and 	b.sys_topHit=1
-    						   and  s.deleted=0
-    						   and  b.deleted=0
-    						  GROUP BY b.sequenceId
-    						  ORDER BY b.sequenceId, db_ranking_code desc};
-    my $top_hits_qry = $dbh->prepare($top_hits_stmt);
-    $top_hits_qry->execute($libId);
+# for all uniref only sequences get functional/unassigned protein info.
+my $functional_count = 0;
+my $functional_list = "";
+my $unclassified_count = 0;
+my $unclassified_list = "";
+my $null_str = "NULL";
 
-    ########################################
-    # SPLIT SEQUENCE INTO UNIREF100P ONLY
-    # AND METAGENOMES ONLY SET AT
-    # EVALUE CUTOFF AT 0.001
-    ########################################
-    # get uniref and metagenomes exclusive sequences.
-    # top_hits_qry returnes only one row per sequence
-    # db_ranking_code 10=UNIREF100P
-    #				  5=METAGENOMES
-    #
-    print STDOUT "Separeate uniref and metagenome hits\n";
+print STDOUT "check if fxnal hit per uniref record\n";
 
-    my(@uniref_arr,@meta_arr);
-    while (my $result = $top_hits_qry->fetchrow_hashref()) {
-        if ($$result{db_ranking_code} == 100){
-            push @uniref_arr, $$result{sequenceId};
-        } else {
-            push @meta_arr , $$result{sequenceId};
-        }
-    }
+foreach my $sequenceId(@uniref_arr) {
+	 #divide all hits in fxn and unclassified.
+	 if (hasFunctionalHit($sequenceId)){
+		 $functional_count++;
+		 $functional_list .= $sequenceId . ",";
+	 } else {
+		 $unclassified_count++;
+		 $unclassified_list .= $sequenceId . ",";
+	 }
+ }
 
-    ###########################################
-    # GET FUNCTIONAL AND UNASSIGNED FUNCTIONAL
-    # CATEGORIES FOR ALL UNIREF100P SEQUENCES
-    # AT EVALUE CUTOFF OF 0.001
-    ###########################################
+#remove last comma
+$functional_list =~ s/,$//;
+$unclassified_list =~ s/,$//;
 
-    # for all uniref only sequences get functional/unassigned protein info.
-    my $functional_count = 0;
-    my $functional_list = "";
-    my $unclassified_count = 0;
-    my $unclassified_list = "";
-    my $null_str = "NULL";
+###############################################
+# CALCULATE ENVIRONMENTAL CATEGORIES FOR
+# EACH LIBRARY, VIRAL ONLY, TOP VIRAL,
+# MICORBIAL ONLY, TOP MICORBIAL
+# AT EVALUE CUTOFF AT 0.001
+###############################################
+my %env=();
+$env{'top_viral'}=0;
+$env{'top_viral_list'}="";
+$env{'top_micro'}=0;
+$env{'top_micro_list'}="";
+$env{'viral'}=0;
+$env{'viral_list'}="";
+$env{'micro'}=0;
+$env{'micro_list'}="";
 
-    print STDOUT "check if fxnal hit per uniref record\n";
+foreach my $seqid (@meta_arr) {
+	#### get all blast hits for a seq.
+	my $sth = $dbh->prepare(qq{SELECT b.id, b.hit_name, b.sys_topHit, b.query_name, b.hit_description
+				FROM blastp b
+				WHERE b.sequenceId=?
+					and b.e_value<=0.001
+					and b.deleted=0
+					and b.database_name='METAGENOMES'
+				ORDER BY b.id,b.sys_topHit});
+	$sth->execute(($seqid));
 
-    foreach my $sequenceId(@uniref_arr) {
-    	#divide all hits in fxn and unclassified.
-    	if (hasFunctionalHit($sequenceId)){
-    		$functional_count++;
-    		$functional_list .= $sequenceId . ",";
-    	} else {
-    		$unclassified_count++;
-    		$unclassified_list .= $sequenceId . ",";
-    	}
-    }
+	my $top_hit="";
+	my $same_hit=1;
 
-    #remove last comma
-    $functional_list =~ s/,$//;
-    $unclassified_list =~ s/,$//;
+	#### loop through all blast results for a sequence
+	while (my $row = $sth->fetchrow_hashref) {
 
-    ###############################################
-    # CALCULATE ENVIRONMENTAL CATEGORIES FOR
-    # EACH LIBRARY, VIRAL ONLY, TOP VIRAL,
-    # MICORBIAL ONLY, TOP MICORBIAL
-    # AT EVALUE CUTOFF AT 0.001
-    ###############################################
-    my %env=();
-    $env{'top_viral'}=0;
-    $env{'top_viral_list'}="";
-    $env{'top_micro'}=0;
-    $env{'top_micro_list'}="";
-    $env{'viral'}=0;
-    $env{'viral_list'}="";
-    $env{'micro'}=0;
-    $env{'micro_list'}="";
-
-    foreach my $seqid (@meta_arr) {
-    	# get all blast hits for a seq.
-    	my $sth = $dbh->prepare(qq{SELECT b.id, b.hit_name, b.sys_topHit, b.query_name
-    				FROM blastp b
-    				WHERE b.sequenceId=?
-    				   and b.e_value<=0.001
-    				   and b.deleted=0
-    				   and b.database_name='METAGENOMES'
-    				ORDER BY b.id,b.sys_topHit});
-    	$sth->execute(($seqid));
-
-    	my $top_hit="";
-    	my $same_hit=1;
-
-    	# loop through all blast results for a sequence
-    	while (my $row = $sth->fetchrow_hashref) {
-    		my $mgol_acc_hash = $utils->get_acc_from_lookup("mgol",substr($$row{hit_name},0,3));
-
-    		if (defined $mgol_acc_hash) {
-                my $mgol_hash = $mgol_acc_hash->{acc_data}[0];
-    			my $lib_type = ($mgol_hash->{lib_type} =~ /viral/i) ? "viral" : "micro";
-
-    			if ($$row{sys_topHit} == 1) {
-    				if ($lib_type =~ /viral/i) {
-    					$top_hit = "viral";
-    				} else { $top_hit = $lib_type; }
-    			}
-
-    			if (($lib_type !~ /$top_hit/i) && ($same_hit)) {
-    				$same_hit = 0;
-    			}
-    		} else {
-    			print STDERR "Cannot find mgol entry for $$row{hit_name}\n";
-    		}
-    	}
-
-        # viral or microbial only assignment.
-        # if both $top_hit and $other_hits are same or
-        # $other_hit is empyt i.e only one hit
-        my $env_type = $top_hit;
-        my $env_type_list = $env_type ."_list";
-
-        # have multiple hits and top hit is different form other hits.
-        # it is possible for $top_hit ne $other_hit if only one hit
-        if (!$same_hit) {
-            $env_type = "top_" . $top_hit;
-            $env_type_list = $env_type ."_list";
-        }
-
-        $env{$env_type} += 1;
-        if (length($env{$env_type_list})) {
-            $env{$env_type_list} .= "," . $seqid;
-        } else {
-            $env{$env_type_list} = $seqid;
-        }
-    }
-
-    #################################################
-    # CALCULATE TAXONOMY LINEAGE AT DOMAIN LEVEL
-    # AT EVALUE CUTOFF AT 0.001
-    #################################################
-    ## get domain taxonomy count.
-    my ($type,$count,$lineage);
-    $tax->execute(($libId));
-    $tax->bind_col(1,\$type);
-    $tax->bind_col(2,\$count);
-    $lineage = "";
-
-    while($tax->fetch) {
-    	if (!length($type)) {
-    		$type = "Unclassified";
-    	}
-    	if (length($lineage)) {
-    		$lineage = $lineage.";".$type.":".$count;
-    	}
-    	else { $lineage = $type.":".$count; }
-    }
-
-	##################################################
-	# CALCULATE ORF CATEGORIES and TYPES
-	# FOR EACH LIBRARY AT EVALUE CUTOFF OF 0.001
-	##################################################
-	my %orf=();
-	$orf{'comp_cnt'}=0;
-	$orf{'comp_lst'}="";
-	$orf{'comp_mb'}=0;
-	$orf{'incomp_cnt'}=0;
-	$orf{'incomp_lst'}="";
-	$orf{'incomp_mb'}=0;
-	$orf{'start_cnt'}=0;
-	$orf{'start_lst'}="";
-	$orf{'start_mb'}=0;
-	$orf{'stop_cnt'}=0;
-	$orf{'stop_lst'}="";
-	$orf{'stop_mb'}=0;
-	#$orf{'bacteria_cnt'}=0;
-	#$orf{'bacteria_lst'}="";
-	#$orf{'bacteria_mb'}=0;
-	#$orf{'archaea_cnt'}=0;
-	#$orf{'archaea_lst'}="";
-	#$orf{'archaea_mb'}=0;
-	#$orf{'phage_cnt'}=0;
-	#$orf{'phage_lst'}="";
-	#$orf{'phage_mb'}=0;
-
-    $all_seq->execute(($libId));
-	while (my $row = $all_seq->fetchrow_hashref) {
-		my %opts;
-
-		map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $$row{header});
-
-		if ($opts{type} =~ /lack[_|\s]stop/i){
-			$opts{type} = "stop";
-		} elsif ($opts{type} =~ /lack[_|\s]start/i){
-			$opts{type} = "start";
-		} elsif ($opts{type} =~ /incomplete/i){
-			$opts{type} = "incomp";
-		} elsif ($opts{type} =~ /complete/i){
-			$opts{type} = "comp";
+		my $lib_type = "micro";
+		if ($$row{hit_description} =~ /(viral) metagenome from/i) {
+			$lib_type = $1;
 		}
 
-		#### set model stats.
-		#$orf{$opts{model}.'_cnt'}++;
+		if ($$row{sys_topHit} == 1) {
+			if ($lib_type =~ /viral/i) {
+				$top_hit = "viral";
+			} else { $top_hit = $lib_type; }
+		}
 
-		####if * at the end of bases, don't count it
-		#if ($$row{basepair} =~ /\*$/) {
-		#	$orf{$opts{model}.'_mb'} += ($$row{size}-1);
-		#}else {
-		#	$orf{$opts{model}.'_mb'} += $$row{size};
-		#}
-
-		#if (length($orf{$opts{model}.'_lst'})) {
-		#	$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $$row{id};
-		#} else { $orf{$opts{model}.'_lst'} = $$row{id}; }
-
-		# set type stats.
-		$orf{$opts{type}.'_cnt'}++;
-
-		#do not count * in bases
-		if ($$row{basepair} =~ /\*$/) {
-			$orf{$opts{type}.'_mb'} += ($$row{size} - 1);
-		} else {
-            $orf{$opts{type}.'_mb'} += $$row{size};
-        }
-
-		if (length($orf{$opts{type}.'_lst'})) {
-			$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $$row{id};
-		} else {
-            $orf{$opts{type}.'_lst'} = $$row{id};
-        }
+		if (($lib_type !~ /$top_hit/i) && ($same_hit)) {
+			$same_hit = 0;
+		}
 	}
 
-    ##################################################
-    # GET ORFAN COUNT AT EVALUE CUTOFF OF 0.001
-    ##################################################
-    my $sigcnt = 0;
-    my $siglst = "";
+	#### viral or microbial only assignment.
+	#### if both $top_hit and $other_hits are same or
+	#### $other_hit is empyt i.e only one hit
+	my $env_type = $top_hit;
+	my $env_type_list = $env_type ."_list";
 
-    $sig_seq->execute(($libId));
-    my $rslt = $sig_seq->fetchall_arrayref({});
-    foreach my $val (@$rslt) {
-        $sigcnt ++;
-        # get all significant hit ids.
-        if (length($siglst)) {
-            $siglst .= "," . $val->{id};
-        } else {
-            $siglst = $val->{id};
-        }
-    }
+	#### have multiple hits and top hit is different form other hits.
+	#### it is possible for $top_hit ne $other_hit if only one hit
+	if (!$same_hit) {
+		$env_type = "top_" . $top_hit;
+		$env_type_list = $env_type ."_list";
+	}
 
-    $all_seq->execute(($libId));
-    $rslt = $all_seq->fetchall_arrayref({});
-    my $allcount = 0;
-    my %orfan=();
-    $orfan{'count'}=0;
-    $orfan{'lst'}="";
-    foreach my $val (@$rslt) {
-        $allcount++;
-        if (index($siglst, $val->{id}) < 0) {
-             $orfan{'count'}++;
-             if (length($orfan{'lst'})) {
-            	$orfan{'lst'} .= "," . $val->{id};
-             } else {
-                 $orfan{'lst'} = $val->{id};
-             }
-        }
-    }
-
-    ##################################################
-    # GET READ COUNT AND MEGABASES
-    ##################################################
-    $read->execute(($libId));
-    my $read_row = $read->fetchall_arrayref([],1);
-    my %read_s=();
-    $read_s{'count'}=$read_row->[0]->[0];
-    $read_s{'mb'} = $read_row->[0]->[1];
-
-    ##################################################
-    # GET TRNA COUNT AND LIST
-    ##################################################
-    $tRNA->execute(($libId));
-    my %tRNA_s=();
-    $tRNA_s{'count'}=0;
-    $tRNA_s{'lst'}="";
-
-    while (my @rslt = $tRNA->fetchrow_array()) {
-        $tRNA_s{'count'}++;
-        if (length($tRNA_s{'lst'})) {
-            $tRNA_s{'lst'} = $tRNA_s{'lst'} . "," . $rslt[0];
-        } else {
-            $tRNA_s{'lst'} = $rslt[0];
-        }
-    }
-
-    ###################################################
-    # GET RRNA COUNT AND LIST
-    ###################################################
-    $rRNA->execute(($libId));
-    my %rRNA_s=();
-    $rRNA_s{'count'}=0;
-    $rRNA_s{'lst'}="";
-
-    while (my @rslt = $rRNA->fetchrow_array()) {
-        $rRNA_s{'count'}++;
-        if (length($rRNA_s{'lst'})) {
-            $rRNA_s{'lst'} = $rRNA_s{'lst'} . "," . $rslt[0];
-        } else {
-            $rRNA_s{'lst'} = $rslt[0];
-        }
-    }
-
-    #################################################
-    # INSERT STATISTICS INTO TABLE
-    #################################################
-
-    #create output file for functional_id list and unclass_id list
-    my $output_dir = $file_loc;
-
-    #"archaea_lst" => $output_dir."/idFiles/arcORFList_".$libId.".txt",
-    #"bacteria_lst" => $output_dir."/idFiles/bacORFList_".$libId.".txt",
-    #"phage_lst" => $output_dir."/idFiles/phgORFList_".$libId.".txt",
-
-    my %file_output_list= (
-        "functional_list" => $output_dir."/idFiles/fxnIdList_".$libId.".txt",
-        "unclassified_list" => $output_dir."/idFiles/unClassIdList_".$libId.".txt",
-        "viral_list" => $output_dir."/idFiles/viralList_".$libId.".txt",
-        "top_viral_list" => $output_dir."/idFiles/topViralList_".$libId.".txt",
-        "micro_list" => $output_dir."/idFiles/microList_".$libId.".txt",
-        "top_micro_list" => $output_dir."/idFiles/topMicroList_".$libId.".txt",
-        "comp_lst" => $output_dir."/idFiles/compORFList_".$libId.".txt",
-        "incomp_lst" => $output_dir."/idFiles/incompORFList_".$libId.".txt",
-        "start_lst" => $output_dir."/idFiles/startORFList_".$libId.".txt",
-        "stop_lst" => $output_dir."/idFiles/stopORFList_".$libId.".txt",
-        "orfan" => $output_dir."/idFiles/orfanList_".$libId.".txt",
-        "tRNA" => $output_dir."/idFiles/tRNAList_".$libId.".txt",
-        "rRNA" => $output_dir."/idFiles/rRNAList_".$libId.".txt"
-    );
-
-    foreach my $key (keys %file_output_list) {
-
-        open(OUT, ">", $file_output_list{$key} ) or
-            die "Could not open file $file_output_list{$key} to write\n";
-
-        if ($key =~ /functional_list/i) {
-            print OUT $functional_list;
-        } elsif ($key =~ /unclassified_list/i) {
-            print OUT $unclassified_list;
-        } elsif ($key =~ /viral_list|top_viral_list|micro_list|top_micro_list/i) {
-            print OUT $env{$key};
-        #} elsif ($key =~ /comp_lst|incomp_lst|start_lst|stop_lst|archaea_lst|bacteria_lst|phage_lst/i) {
-        } elsif ($key =~ /comp_lst|incomp_lst|start_lst|stop_lst/i) {
-            print OUT $orf{$key};
-        } elsif ($key =~ /orfan/i){
-            print OUT $orfan{'lst'};
-        } elsif ($key =~ /tRNA/i){
-            print OUT $tRNA_s{'lst'};
-        } elsif ($key =~ /rRNA/i){
-            print OUT $rRNA_s{'lst'};
-        }
-
-        close OUT;
-    }
-
-    #### removed from query below
-    #$orf{archaea_cnt}, $orf{archaea_mb}, "arcORFList_${libId}.txt",
-    #$orf{bacteria_cnt}, $orf{bacteria_mb}, "bacORFList_${libId}.txt",
-    #$orf{phage_cnt}, $orf{phage_mb}, "phgORFList_${libId}.txt",
-
-    $inst_fxn->execute($libId, $read_s{count}, $read_s{mb},
-                      $orf{comp_cnt}, $orf{comp_mb}, "compORFList_${libId}.txt",
-                      $orf{incomp_cnt}, $orf{incomp_mb}, "incompORFList_${libId}.txt",
-                      $orf{start_cnt}, $orf{start_mb}, "startORFList_${libId}.txt",
-                      $orf{stop_cnt}, $orf{stop_mb}, "stopORFList_${libId}.txt",
-                      $env{viral}, "viralList_${libId}.txt",
-                      $env{top_viral}, "topViralList_${libId}.txt",
-                      $env{micro}, "microList_${libId}.txt",
-                      $env{top_micro}, "topMicroList_${libId}.txt",
-                      $functional_count, "fxnIdList_${libId}.txt",
-                      $unclassified_count, "unClassIdList_${libId}.txt",
-                      $tRNA_s{count}, "tRNAList_${libId}.txt",
-                      $rRNA_s{count}, "rRNAList_${libId}.txt",
-                      $orfan{count}, "orfanList_${libId}.txt",
-                      $lineage, 0, getTimeStamp()
-                      );
-
-    # $inst_fxn->execute(($libId,$functional_count,"fxnIdList_$libId.txt",
-    # 		$unclassified_count,"unClassIdList_$libId.txt"));
-    #
-    # $upd_env->execute(($env{'viral'},"viralList_$libId.txt",
-    # 	       $env{'top_viral'},"topViralList_$libId.txt",
-    # 	       $env{'micro'},"microList_$libId.txt",
-    # 	       $env{'top_micro'},"topMicroList_$libId.txt",$libId));
-    #
-    # $upd_orf_mod->execute(($orf{'comp_cnt'},$orf{'comp_mb'},"compORFList_$libId.txt",
-    # 		   $orf{'incomp_cnt'},$orf{'incomp_mb'},"incompORFList_$libId.txt",
-    # 		   $orf{'start_cnt'},$orf{'start_mb'},"startORFList_$libId.txt",
-    # 		   $orf{'stop_cnt'},$orf{'stop_mb'},"stopORFList_$libId.txt",$libId));
-    #
-    # $upd_orf_type->execute(($orf{'archaea_cnt'},$orf{'archaea_mb'},"arcORFList_$libId.txt",
-    # 		    $orf{'bacteria_cnt'},$orf{'bacteria_mb'},"bacORFList_$libId.txt",
-    # 		    $orf{'phage_cnt'},$orf{'phage_mb'},"phgORFList_$libId.txt",$libId));
-    #
-    # $upd_orfan->execute(($orfan{'count'},"orfanList_$libId.txt",$libId));
-    #
-    # $upd_rest->execute(($read_s{'count'},$read_s{'mb'},
-    # 		$tRNA_s{'count'},"tRNAList_$libId.txt",
-    # 		$rRNA_s{'count'},"rRNAList_$libId.txt",
-    # 		$lineage,$libId));
+	$env{$env_type} += 1;
+	if (length($env{$env_type_list})) {
+		$env{$env_type_list} .= "," . $seqid;
+	} else {
+		$env{$env_type_list} = $seqid;
+	}
 }
 
-#$dbh1->disconnect;
-#$dbh->disconnect;
+ #################################################
+ #### CALCULATE TAXONOMY LINEAGE AT DOMAIN LEVEL
+ #### AT EVALUE CUTOFF AT 0.001
+ #################################################
+ #### get domain taxonomy count.
+ my ($type,$count,$lineage);
+ $tax->execute(($libId));
+ $tax->bind_col(1,\$type);
+ $tax->bind_col(2,\$count);
+ $lineage = "";
 
-timer(); #call timer to see when process ended.
+ while($tax->fetch) {
+	if (!length($type)) {
+		$type = "Unclassified";
+	}
+	if (length($lineage)) {
+		$lineage = $lineage.";".$type.":".$count;
+	}
+	else { $lineage = $type.":".$count; }
+}
+
+ ##################################################
+ # CALCULATE ORF CATEGORIES and TYPES
+ # FOR EACH LIBRARY AT EVALUE CUTOFF OF 0.001
+ ##################################################
+ my %orf=();
+ $orf{'comp_cnt'}=0;
+ $orf{'comp_lst'}="";
+ $orf{'comp_mb'}=0;
+ $orf{'incomp_cnt'}=0;
+ $orf{'incomp_lst'}="";
+ $orf{'incomp_mb'}=0;
+ $orf{'start_cnt'}=0;
+ $orf{'start_lst'}="";
+ $orf{'start_mb'}=0;
+ $orf{'stop_cnt'}=0;
+ $orf{'stop_lst'}="";
+ $orf{'stop_mb'}=0;
+ $orf{'bacteria_cnt'}=0;
+ $orf{'bacteria_lst'}="";
+ $orf{'bacteria_mb'}=0;
+ $orf{'archaea_cnt'}=0;
+ $orf{'archaea_lst'}="";
+ $orf{'archaea_mb'}=0;
+ $orf{'phage_cnt'}=0;
+ $orf{'phage_lst'}="";
+ $orf{'phage_mb'}=0;
+
+ $all_seq->execute(($libId));
+ while (my $row = $all_seq->fetchrow_hashref) {
+	my %opts;
+
+	map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $$row{header});
+
+	if ($opts{type} =~ /lack[_|\s]stop/i){
+		$opts{type} = "stop";
+	} elsif ($opts{type} =~ /lack[_|\s]start/i){
+		$opts{type} = "start";
+	} elsif ($opts{type} =~ /incomplete/i){
+		$opts{type} = "incomp";
+	} elsif ($opts{type} =~ /complete/i){
+		$opts{type} = "comp";
+	}
+
+	#### set model stats.
+	$orf{$opts{model}.'_cnt'}++;
+
+	#if * at the end of bases, don't count it
+	if ($$row{basepair} =~ /\*$/) {
+		$orf{$opts{model}.'_mb'} += ($$row{size}-1);
+	} else {
+		$orf{$opts{model}.'_mb'} += $$row{size};
+	}
+
+	if (length($orf{$opts{model}.'_lst'})) {
+		$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $$row{id};
+	} else { $orf{$opts{model}.'_lst'} = $$row{id}; }
+
+	#### set type stats.
+	$orf{$opts{type}.'_cnt'}++;
+
+	####do not count * in bases
+	if ($$row{basepair} =~ /\*$/) {
+		$orf{$opts{type}.'_mb'} += ($$row{size} - 1);
+	} else { $orf{$opts{type}.'_mb'} += $$row{size}; }
+
+	if (length($orf{$opts{type}.'_lst'})) {
+		$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $$row{id};
+	} else { $orf{$opts{type}.'_lst'} = $$row{id}; }
+}
+
+##################################################
+#### GET ORFAN COUNT AT EVALUE CUTOFF OF 0.001
+##################################################
+my $sigcnt = 0;
+my $siglst = "";
+
+$sig_seq->execute(($libId));
+my $rslt = $sig_seq->fetchall_arrayref({});
+
+foreach my $val (@$rslt) {
+	$sigcnt ++;
+	#### get all significant hit ids.
+	if (length($siglst)) {
+		$siglst .= "," . $val->{id};
+	} else { $siglst = $val->{id}; }
+}
+
+$all_seq->execute(($libId));
+$rslt = $all_seq->fetchall_arrayref({});
+my $allcount = 0;
+my %orfan=();
+$orfan{'count'}=0;
+$orfan{'lst'}="";
+
+foreach my $val (@$rslt) {
+	$allcount++;
+	if (index($siglst, $val->{id}) < 0) {
+		$orfan{'count'}++;
+
+		if (length($orfan{'lst'})) {
+			$orfan{'lst'} .= "," . $val->{id};
+		} else { $orfan{'lst'} = $val->{id}; }
+	}
+}
+
+##################################################
+#### GET READ COUNT AND MEGABASES
+##################################################
+$read->execute(($libId));
+my $read_row = $read->fetchall_arrayref([],1);
+my %read_s = ();
+$read_s{'count'} = $read_row->[0]->[0];
+$read_s{'mb'} = $read_row->[0]->[1];
+
+##################################################
+#### GET TRNA COUNT AND LIST
+##################################################
+$tRNA->execute(($libId));
+my %tRNA_s = ();
+$tRNA_s{'count'} = 0;
+$tRNA_s{'lst'} = "";
+
+while (my @rslt = $tRNA->fetchrow_array()) {
+	$tRNA_s{'count'}++;
+	if (length($tRNA_s{'lst'})) {
+		$tRNA_s{'lst'} = $tRNA_s{'lst'} . "," . $rslt[0];
+	} else { $tRNA_s{'lst'} = $rslt[0]; }
+}
+
+###################################################
+#### GET RRNA COUNT AND LIST
+###################################################
+$rRNA->execute(($libId));
+my %rRNA_s = ();
+$rRNA_s{'count'} = 0;
+$rRNA_s{'lst'} = "";
+
+while (my @rslt = $rRNA->fetchrow_array()) {
+	$rRNA_s{'count'}++;
+	if (length($rRNA_s{'lst'})) {
+		$rRNA_s{'lst'} = $rRNA_s{'lst'} . "," . $rslt[0];
+	} else { $rRNA_s{'lst'} = $rslt[0]; }
+}
+
+
+#################################################
+#### INSERT STATISTICS INTO TABLE
+#################################################
+
+####create output file for functional_id list and unclass_id list
+my $output_dir = "$options{outdir}/idFiles";
+
+my %file_output_list= (
+    "functional_list" => $output_dir."/fxnIdList_".$libId.".txt",
+    "unclassified_list" => $output_dir."/unClassIdList_".$libId.".txt",
+    "viral_list" => $output_dir."/viralList_".$libId.".txt",
+    "top_viral_list" => $output_dir."/topViralList_".$libId.".txt",
+    "micro_list" => $output_dir."/microList_".$libId.".txt",
+    "top_micro_list" => $output_dir."/topMicroList_".$libId.".txt",
+    "comp_lst" => $output_dir."/compORFList_".$libId.".txt",
+    "incomp_lst" => $output_dir."/incompORFList_".$libId.".txt",
+    "start_lst" => $output_dir."/startORFList_".$libId.".txt",
+    "stop_lst" => $output_dir."/stopORFList_".$libId.".txt",
+    "archaea_lst" => $output_dir."/arcORFList_".$libId.".txt",
+    "bacteria_lst" => $output_dir."/bacORFList_".$libId.".txt",
+    "phage_lst" => $output_dir."/phgORFList_".$libId.".txt",
+    "orfan" => $output_dir."/orfanList_".$libId.".txt",
+    "tRNA" => $output_dir."/tRNAList_".$libId.".txt",
+    "rRNA" => $output_dir."/rRNAList_".$libId.".txt"
+);
+
+foreach my $key (keys %file_output_list) {
+
+   open(OUT, ">", $file_output_list{$key} ) or
+	  $logger->logdie("Could not open file $file_output_list{$key} to write");
+
+   if ($key =~ /functional_list/i) {
+	  print OUT $functional_list;
+   } elsif ($key =~ /unclassified_list/i) {
+	  print OUT $unclassified_list;
+   } elsif ($key =~ /viral_list|top_viral_list|micro_list|top_micro_list/i) {
+	  print OUT $env{$key};
+   } elsif ($key =~ /comp_lst|incomp_lst|start_lst|stop_lst|archaea_lst|bacteria_lst|phage_lst/i) {
+	  print OUT $orf{$key};
+   } elsif ($key =~ /orfan/i){
+	  print OUT $orfan{'lst'};
+   } elsif ($key =~ /tRNA/i){
+	  print OUT $tRNA_s{'lst'};
+   } elsif ($key =~ /rRNA/i){
+	  print OUT $rRNA_s{'lst'};
+   }
+
+   close OUT;
+}
+
+my $max_id = 0;
+my $sth = $dbh->prepare('SELECT max(id) as max_id FROM statistics');
+$sth->execute;
+
+while ( my $result = $sth->fetchrow_hashref() ) {
+	if (defined $result->{max_id}) {
+		$max_id = $result->{max_id} + 1;
+	} else {
+		$max_id = 1;
+	}
+}
+
+$inst_fxn->execute($max_id, $libId, $read_s{count}, $read_s{mb},
+				   $orf{comp_cnt}, $orf{comp_mb}, "compORFList_${libId}.txt",
+				   $orf{incomp_cnt}, $orf{incomp_mb}, "incompORFList_${libId}.txt",
+				   $orf{start_cnt}, $orf{start_mb}, "startORFList_${libId}.txt",
+				   $orf{stop_cnt}, $orf{stop_mb}, "stopORFList_${libId}.txt",
+				   $orf{archaea_cnt}, $orf{archaea_mb}, "arcORFList_${libId}.txt",
+				   $orf{bacteria_cnt}, $orf{bacteria_mb}, "bacORFList_${libId}.txt",
+				   $orf{phage_cnt}, $orf{phage_mb}, "phgORFList_${libId}.txt",
+				   $env{viral}, "viralList_${libId}.txt",
+				   $env{top_viral}, "topViralList_${libId}.txt",
+				   $env{micro}, "microList_${libId}.txt",
+				   $env{top_micro}, "topMicroList_${libId}.txt",
+				   $functional_count, "fxnIdList_${libId}.txt",
+				   $unclassified_count, "unClassIdList_${libId}.txt",
+				   $tRNA_s{count}, "tRNAList_${libId}.txt",
+				   $rRNA_s{count}, "rRNAList_${libId}.txt",
+				   $orfan{count}, "orfanList_${libId}.txt",
+				   $lineage, 0, getTimeStamp()
+				   );
+$max_id++;
+
+$logger->info("General library stats for $options{sample} completed");
 exit(0);
 
 ###############################################################################
@@ -694,54 +599,20 @@ exit(0);
 ###############################################################################
 
 sub check_parameters {
-  my $options = shift;
+    my $options = shift;
 
-  my $flag = 0;
+    my @required = qw(input output);
 
-   # if library list file or library file has been specified
-   # get library info. server, id and library name.
-   if ((defined $options{input}) && (length($options{input}))) {
-	  $libObject = $libinfo->getLibFileInfo($options{input});
-	  $flag = 1;
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+    }
 
-	print STDOUT Dumper($libObject);
-   }
+    system ("mkdir -p $options{outdir}/idFiles");
+    system ("mkdir -p $options{outdir}/xDocs");
 
-   # if server is not specifed and library file is not specifed show error
-   if (!$options{server} && !$flag) {
-	  pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-	  exit(-1);
-   }
-
-   # if exec env is not specified show error
-   unless ($options{env} && $options{lookupDir}) {
-	  pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-	  exit(-1);
-   }
-
-   # if no library info set library to -1;
-   unless ($options{library}) {
-	  $options{library} = -1;
-   }
-
-   # if getting info from library file set server and library info.
-   if ($flag) {
-	  $options{library} = $libObject->{id};
-	  $options{server} = $libObject->{server};
-   }
-
-   system ("mkdir -p $options{outdir}/idFiles");
-   system ("mkdir -p $options{outdir}/xDocs");
-
-
-   $dbh1 = DBI->connect("DBI:mysql:database=".$utils->u_name.";host=".$utils->db_host,
-   	       $utils->db_user, $utils->db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
-
-   $dbh0 = DBI->connect("DBI:mysql:database=".$utils->db_live_name.";host=".$utils->db_live_host,
-   	       $utils->db_live_user, $utils->db_live_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
-
-   $dbh = DBI->connect("DBI:mysql:database=".$utils->db_name.";host=".$utils->db_host,
-   	      $utils->db_user,$utils->db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
 }
 
 ###############################################################################
@@ -760,22 +631,6 @@ sub hasFunctionalHit {
    }
 
    return 0;
-}
-
-###############################################################################
-sub get_fxn_query{
-   my $db = $_[0];
-
-   switch ($db) {
-	  case "UNIREF100P"{ return q|SELECT gc.name as fxn1 FROM gofxn g INNER JOIN go_chains gc ON g.chain_id=gc.chain_id
-			      WHERE gc.level=1 and g.realAcc = ?|; }
-	  case "ACLAME" { return q|SELECT mc.name as fxn1 FROM aclamefxn a INNER JOIN mego_chains mc ON a.chain_id=mc.chain_id
-			      WHERE mc.level=1 and a.realAcc = ?|; } # not used
-	  case "SEED" { return q|SELECT fxn1 from seed where realacc = ?|; } # not used
-	  case "KEGG" { return q|SELECT fxn1 from kegg where realacc = ?|; } # not used
-	  case "COG" { return q|SELECT fxn1 from cog where realacc = ?|; }  # not used
-	  else { return ""; }
-   }
 }
 
 ###############################################################################

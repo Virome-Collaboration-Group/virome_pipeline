@@ -58,14 +58,11 @@ BEGIN {
 
 my %options = ();
 my $results = GetOptions (\%options,
-                          'server|s=s',
-                          'library|b=s',
-			  'env|e=s',
-                          'input|i=s',
-                          'outdir|o=s',
-                          'log|l=s',
-                          'debug|d=s',
-                          'help|h') || pod2usage();
+            			  'input|i=s',
+            			  'outdir|o=s',
+            			  'log|l=s',
+            			  'debug|d=s',
+            			  'help|h') || pod2usage();
 
 ## display documentation
 if( $options{'help'} ){
@@ -79,23 +76,20 @@ $logger = $logger->get_logger();
 #############################################################################
 #### DEFINE GLOBAL VAIRABLES.
 ##############################################################################
-my $dbh0;
-my $dbh;
-
-my $libinfo = LIBInfo->new();
-my $libObject;
-
-my $utils = new UTILS_V;
-$utils->set_db_params($options{env});
-
-my $file_loc = $options{outdir}."/xDocs";
-
 ## make sure everything passed was peachy
 &check_parameters(\%options);
-##############################################################################
-timer(); #call timer to see when process started.
 
-my $lib_sel = $dbh0->prepare(q{SELECT id FROM library WHERE deleted=0 and server=?});
+#init db connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
+my $this;
+my $cmd = "";
+
+my $this;
+my $cmd = "";
+
+$this->{output_dir} = "$options{output_dir}/xDocs";
+
+my $libId = 1;
 
 my $orf_sel = $dbh->prepare(q{SELECT s.size*3 as hval
 							  FROM 	sequence s
@@ -123,41 +117,26 @@ my $gc_sel = $dbh->prepare(q{SELECT s.gc as hval
 								and sr.typeId = 1
 								and s.deleted = 0
 							  ORDER BY hval desc});
+my $rslt;
 
-my $rslt = '';
-my @libArray;
+$orf_sel->execute($libId);
+$rslt = $orf_sel->fetchall_arrayref({});
+binORFnREADs($rslt, $libId, "ORF");
 
-if ($options{library} <= 0){
-    $lib_sel->execute($options{server});
-    $rslt = $lib_sel->fetchall_arrayref({});
+$read_sel->execute($libId);
+$rslt = $read_sel->fetchall_arrayref({});
+binORFnREADs($rslt, $libId, "READ");
 
-    foreach my $lib (@$rslt){
-	push @libArray, $lib->{'id'};
-    }
-} else {
-    push @libArray, $options{library};
-}
+$gc_sel->execute($libId);
+$rslt = $gc_sel->fetchall_arrayref({});
+binGC($rslt, $libId, "GC");
 
-foreach my $lib (@libArray){
-    print "Processing library: $lib\n";
+#### move updated sqlite database back from local to NFS mount
+#$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
+#execute_cmd($cmd);
 
-    #print "\n\nBin ORFs\n";
-    $orf_sel->execute($lib);
-    $rslt = $orf_sel->fetchall_arrayref({});
-    binORFnREADs($rslt, $lib, "ORF");
+$logger->info("Library histogram for $options{sample} completed");
 
-    #print "\n\nBin READs\n";
-    $read_sel->execute($lib);
-    $rslt = $read_sel->fetchall_arrayref({});
-    binORFnREADs($rslt, $lib, "READ");
-
-    #print "\n\nBin GC\n";
-    $gc_sel->execute($lib);
-    $rslt = $gc_sel->fetchall_arrayref({});
-    binGC($rslt, $lib, "GC");
-}
-
-timer(); #call timer to see when process ended.
 exit(0);
 
 
@@ -165,44 +144,22 @@ exit(0);
 ####  SUBS
 ###############################################################################
 sub check_parameters {
-   my $options = shift;
+    my $options = shift;
 
-    my $flag = 0;
+    my @required = qw(input output);
 
-    # if library list file or library file has been specified
-    # get library info. server, id and library name.
-    if ((defined $options{input}) && (length($options{input}))){
-      $libObject = $libinfo->getLibFileInfo($options{input});
-      $flag = 1;
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
     }
 
-    # if server is not specifed and library file is not specifed show error
-    if (!$options{server} && !$flag){
-      pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-      exit(-1);
-    }
-
-    # if exec env is not specified show error
-    unless ($options{env}) {
-      pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-      exit(-1);
-    }
-
-    # if no library info set library to -1;
-    unless ($options{library}){
-        $options{library} = -1;
-    }
-
-	system ("mkdir -p $options{outdir}/idFiles");
-	system ("mkdir -p $options{outdir}/xDocs");
-
-	$dbh0 = DBI->connect("DBI:mysql:database=".$utils->db_name.";host=".$utils->db_host,
-		$utils->db_user, $utils->db_pass, {PrintError=>1, RaiseError =>1, AutoCommit =>1});
-
-    $dbh = DBI->connect("DBI:mysql:database=".$utils->db_name.";host=".$utils->db_host,
-		$utils->db_user, $utils->db_pass, {PrintError=>1, RaiseError =>1, AutoCommit =>1});
+    system ("mkdir -p $options{outdir}/idFiles");
+    system ("mkdir -p $options{outdir}/xDocs");
 
 }
+
 
 ###############################################################################
 sub timer {

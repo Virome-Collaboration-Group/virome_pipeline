@@ -74,12 +74,12 @@ BEGIN {
 }
 
 my %options = ();
-my $results = GetOptions(
-	\%options,   'server|s=s', 'library|b=s', 'env|e=s',
-	'input|i=s', 'outdir|o=s', 'log|l=s',     'debug|d=s',
-	'help|h'
-  )
-  || pod2usage();
+my $results = GetOptions (\%options,
+            			  'input|i=s',
+            			  'outdir|o=s',
+            			  'log|l=s',
+            			  'debug|d=s',
+            			  'help|h') || pod2usage();
 
 #### display documentation
 if ( $options{'help'} ) {
@@ -95,302 +95,281 @@ $logger = $logger->get_logger();
 ##############################################################################
 #### DEFINE GLOBAL VAIRABLES.
 ##############################################################################
-my $dbh0;
-my $dbh;
-
-my $libinfo = LIBInfo->new();
-my $libObject;
-
-my $utils = new UTILS_V;
-$utils->set_db_params( $options{env} );
-
-my $file_loc = $options{outdir};
+my $this->{output_dir} = "$options{outdir}/xDocs/";
 
 #### make sure everything passed was peachy
 &check_parameters( \%options );
 ##########################################################################
 timer();    #call timer to see when process ended.
 
-print "INFO: Start processing.....\n";
+print STDOUT "INFO: Start processing.....\n";
 
-my $lib_sel = $dbh0->prepare(q{SELECT name, prefix, server, id FROM library WHERE deleted=0 and server=? ORDER by id});
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
-my $rslt = '';
-my @libArray;
+my $libId = 1;
 
-if ($options{library} <= 0) {
-    $lib_sel->execute($options{server});
-    $rslt = $lib_sel->fetchall_arrayref({});
+my %lib_feature;
+my $libHash = {
+	"LIBRARY"          => {},
+	"GENESIS"          => {},
+	"SPHERE"           => {},
+	"ECO SYSTEM"       => {},
+	"EXTREME"          => {},
+	"PHYSIO CHEM MODS" => {},
+	"LIB TYPE"         => {}
+};
 
-    foreach my $lib (@$rslt) {
-        push @libArray, $lib->{'id'};
-    }
-} else {
-    push @libArray, $options{library};
-}
+#### GET THE NUMBER OF ORF COUNT FOR EACH LIBRARY
+my $sequence = $dbh->prepare(
+	qq{SELECT distinct b.query_name, b.sequenceId
+			 FROM blastp b
+				inner join
+				  sequence s on s.id=b.sequenceId
+			 WHERE s.libraryId = ?
+				and b.e_value <= 0.001
+				and b.database_name='METAGENOMES' }
+);
 
-foreach my $libId (@libArray) {
-	#### loop through each row of the library
-	my %lib_feature;
-	my $libHash = {
-		"LIBRARY"          => {},
-		"GENESIS"          => {},
-		"SPHERE"           => {},
-		"ECO SYSTEM"       => {},
-		"EXTREME"          => {},
-		"PHYSIO CHEM MODS" => {},
-		"LIB TYPE"         => {}
+$sequence->execute($libId);
+my $sequenceRSLT = $sequence->fetchall_arrayref( {} );
+
+#### loop through all sequence in the given library.
+foreach my $seq (@$sequenceRSLT) {
+
+	#### init struct for each sequence.
+	#### each struct is an array of struct for each sequenceId
+	#### for example struct of seq_lib_struct will be
+	#### sequenceId -> { 'type' => LIBRARY, 'cat' => LIB_PREFIX, 'eval' => EVAL}
+	my ( $seq_lib_struct, $eval_sum ) = &bestEvalue( $seq->{sequenceId}, $seq->{query_name} );
+
+	my $curr    = '';
+	my $seqHash = {
+		"LIBRARY"          => '',
+		"GENESIS"          => '',
+		"SPHERE"           => '',
+		"ECO SYSTEM"       => '',
+		"EXTREME"          => '',
+		"PHYSIO CHEM MODS" => '',
+		"LIB TYPE"         => ''
 	};
 
-	#### GET THE NUMBER OF ORF COUNT FOR EACH LIBRARY
-	my $sequence = $dbh->prepare(
-		qq{SELECT distinct b.query_name, b.sequenceId
-				 FROM blastp b
-				 	inner join
-				 	  sequence s on s.id=b.sequenceId
-				 WHERE s.libraryId = $libId
-				 	and b.e_value <= 0.001
-				  	and b.database_name='METAGENOMES' }
-	);
+	#get summary of each sequence.
+	foreach my $seqId ( keys %$seq_lib_struct ) {
+		my $array      = $seq_lib_struct->{$seqId};
+		my $sequenceId = 0;
+		my $cat        = '';
+		my $link       = '';
 
-	$sequence->execute();
-	my $sequenceRSLT = $sequence->fetchall_arrayref({});
+		#loop through the hash of each sequence in the library
+		#and summarise stats per sequence.
+		foreach my $a (@$array) {
+			$sequenceId = $a->{'id'};
 
-	print "INFO: Retrived all sequences for $libObject->{prefix}\n";
+			#'type' defines genera i.e library, genesis, sphere, eco system
+			unless ( $cat =~ /$a->{'type'}/i ) {
+				if ( length($link) ) {
+					$link =~ s/\^\|\^$//;
 
-	#### loop through all sequence in the given library.
-	foreach my $seq (@$sequenceRSLT) {
-		#### init struct for each sequence.
-		#### each struct is an array of struct for each sequenceId
-		#### for example struct of seq_lib_struct will be
-		#### sequenceId -> { 'type' => LIBRARY, 'cat' => LIB_PREFIX, 'eval' => EVAL}
-		my ( $seq_lib_struct, $eval_sum ) = &bestEvalue( $seq->{sequenceId}, $seq->{query_name} );
-
-		my $curr    = '';
-		my $seqHash = {
-			"LIBRARY"          => '',
-			"GENESIS"          => '',
-			"SPHERE"           => '',
-			"ECO SYSTEM"       => '',
-			"EXTREME"          => '',
-			"PHYSIO CHEM MODS" => '',
-			"LIB TYPE"         => ''
-		};
-
-		#get summary of each sequence.
-		foreach my $seqId ( keys %$seq_lib_struct ) {
-			my $array      = $seq_lib_struct->{$seqId};
-			my $sequenceId = 0;
-			my $cat        = '';
-			my $link       = '';
-
-			#loop through the hash of each sequence in the library
-			#and summarise stats per sequence.
-			foreach my $a (@$array) {
-				$sequenceId = $a->{'id'};
-
-				#'type' defines genera i.e library, genesis, sphere, eco system
-				unless ( $cat =~ /$a->{'type'}/i ) {
-					if ( length($link) ) {
-						$link =~ s/\^\|\^$//;
-
-						##add sequence summary to hash.
-						$seqHash->{$cat} = $link;
-					}
-					$cat  = $a->{'type'};
-					$link = '';
+					##add sequence summary to hash.
+					$seqHash->{$cat} = $link;
 				}
-
-				#eval_sum is a hash containing sum of all evalues per genera
-				#$eval_sum is log inverse eval.
-				my $weight = log( 1 / $a->{'eval'} ) / $eval_sum->{ $a->{'type'} };
-
-			  	#'cat' contains sub cat of each 'type' i.e: natural, anthropegenic
-				$link .= $a->{'cat'} . "=>" . $weight . "^|^";
-
-				#summarized and store for entire library in libHash.
-				if (defined $libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'}}) {
-					$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }->{'weight'} += $weight;
-					$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }->{'id'} .= "," . $a->{'id'};
-				}
-				else {
-					$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }->{'weight'} = $weight;
-					$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }->{'id'} = $a->{'id'};
-				}
-
-				$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }->{'libName'} = $a->{'libName'};
+				$cat  = $a->{'type'};
+				$link = '';
 			}
 
-			#link containts concatinated 'cat' for each 'type' per library
-			$link =~ s/\^\|\^$//;
+			#eval_sum is a hash containing sum of all evalues per genera
+			#$eval_sum is log inverse eval.
+			my $weight =
+			  log( 1 / $a->{'eval'} ) / $eval_sum->{ $a->{'type'} };
 
-			##add sequence summary to hash.
-			$seqHash->{$cat} = $link;
+		  #'cat' contains sub cat of each 'type' i.e: natural, anthropegenic
+			$link .= $a->{'cat'} . "=>" . $weight . "^|^";
+
+			#summarized and store for entire library in libHash.
+			if (
+				defined $libHash->{ $a->{'type'} }->{ $a->{'cat'} }
+				->{ $a->{'from'} } )
+			{
+				$libHash->{ $a->{'type'} }->{ $a->{'cat'} }
+				  ->{ $a->{'from'} }->{'weight'} += $weight;
+				$libHash->{ $a->{'type'} }->{ $a->{'cat'} }
+				  ->{ $a->{'from'} }->{'id'} .= "," . $a->{'id'};
+			}
+			else {
+				$libHash->{ $a->{'type'} }->{ $a->{'cat'} }
+				  ->{ $a->{'from'} }->{'weight'} = $weight;
+				$libHash->{ $a->{'type'} }->{ $a->{'cat'} }
+				  ->{ $a->{'from'} }->{'id'} = $a->{'id'};
+			}
+			$libHash->{ $a->{'type'} }->{ $a->{'cat'} }->{ $a->{'from'} }
+			  ->{'libName'} = $a->{'libName'};
 		}
+
+		#link containts concatinated 'cat' for each 'type' per library
+		$link =~ s/\^\|\^$//;
+
+		##add sequence summary to hash.
+		$seqHash->{$cat} = $link;
 	}
-	push @{ $lib_feature{ $libId } }, $libHash;
+}
+push @{ $lib_feature{ $libId } }, $libHash;
 
-	print "INFO: All sequences processed\n";
+$logger->info("INFO: All sequences processed");
 
-	## get summary of each library
-	foreach my $libId ( keys %lib_feature ) {
-		my $lib_array = $lib_feature{$libId};
-		my $link      = '';
-		my $curr      = '';
+## get summary of each library
+foreach my $libId ( keys %lib_feature ) {
+	my $lib_array = $lib_feature{$libId};
+	my $link      = '';
+	my $curr      = '';
 
-		#loop through each library in the lib array.
-		foreach my $category (@$lib_array) {
+	#loop through each library in the lib array.
+	foreach my $category (@$lib_array) {
 
-	   		#loop through all categories/types i.e: eco system, sphere, lib_type etc.
-			foreach my $feature ( keys %$category ) {
-				my $sub_cat      = $category->{$feature};
-				my $total_weight = 0;
-				my %print_hash;
+		#loop through all categories/types i.e: eco system, sphere, lib_type etc.
+		foreach my $feature ( keys %$category ) {
+			my $sub_cat      = $category->{$feature};
+			my $total_weight = 0;
+			my %print_hash;
 
-				#print feature of given library.
-				my $cname   = '';
-				my $fprefix = uc $feature;
+			#print feature of given library.
+			my $cname   = '';
+			my $fprefix = uc $feature;
+			$fprefix =~ s/ //ig;
+			$cname = $fprefix;
+			my $xFile = $this->{output_dir} ."/". $fprefix . "_XMLDOC_" . $libId . ".xml";
+			my $idFile = $this->{output_dir} ."/". $fprefix . "_IDDOC_" . $libId . ".xml";
 
-				$fprefix =~ s/ //ig;
-				$cname = $fprefix;
+			open( OUT, ">$xFile" ) or $logger->logdie("Cannot open file $xFile to write");
+			open( IDOUT, ">$idFile" ) or  $logger->logdie("Cannot open file $idFile to write");
 
-				my $xFile = "${file_loc}/xDocs/${fprefix}_XMLDOC_${libId}.xml";
-				my $idFile = "${file_loc}/xDocs/${fprefix}_IDDOC_${libId}.xml";
+			#initialize xml documents.
+			print OUT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+			print OUT "<root>\n";
 
-				open( OUT, ">", $xFile) or die "Cannot open file $xFile to write\n";
-				open( IDOUT, ">", $idFile) or die "Cannot open file $idFile to write\n";
+			print IDOUT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+			print IDOUT "<root>\n";
 
-				#initialize xml documents.
-				print OUT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-				print OUT "<root>\n";
+			my $tagCount = 1;
 
-				print IDOUT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-				print IDOUT "<root>\n";
+			foreach my $key ( keys %$sub_cat ) {
+				my $hash_val = $category->{$feature}->{$key};
 
-				my $tagCount = 1;
+				my $sum_weight = 0;
+				my $key_pairs  = '';
+				my $id_list    = '';
+				my $libName    = '';
 
-				foreach my $key ( keys %$sub_cat ) {
-					my $hash_val = $category->{$feature}->{$key};
+				#looop to get sum of all weights in the sub-category
+				foreach my $val ( keys %$hash_val ) {
+					$sum_weight +=
+					  $category->{$feature}->{$key}->{$val}->{'weight'};
+				}
 
-					my $sum_weight = 0;
-					my $key_pairs  = '';
-					my $id_list    = '';
-					my $libName    = '';
+				#loop to print sub-category values with percent weight.
+				foreach my $val ( keys %$hash_val ) {
 
-					#looop to get sum of all weights in the sub-category
-					foreach my $val ( keys %$hash_val ) {
-						$sum_weight +=
-						  $category->{$feature}->{$key}->{$val}->{'weight'};
-					}
+					#print from where the eval was take, and weighted sum
+					my $tag = $key;
+					$tag =~ s/\(.*//gi;
+					$tag =~ s/\//_/gi;
+					$tag =~ s/ /_/gi;
+					$tag =~ s/ $//;
+					$tag =~ s/_$//;
+					$key_pairs .=
+					  "\t\t<$tag NAME=\"$val\" LABEL=\"$val\"" . " VALUE=\""
+					  . ceil(
+						(
+							$category->{$feature}->{$key}->{$val}
+							  ->{'weight'} / $sum_weight
+						) * 100
+					  )
+					  . "\""
+					  . " TAG=\"TAG_"
+					  . $tagCount . "\""
+					  . " IDFNAME=\""
+					  . $fprefix
+					  . "_IDDOC_"
+					  . $libId
+					  . ".xml\""
+					  . " LIBNAME=\""
+					  . $category->{$feature}->{$key}->{$val}->{'libName'}
+					  . "\"/>\n";
 
-					#loop to print sub-category values with percent weight.
-					foreach my $val ( keys %$hash_val ) {
+					$id_list .=
+					  $category->{$feature}->{$key}->{$val}->{'id'} . ",";
+					$libName =
+					  $category->{$feature}->{$key}->{$val}->{'libName'};
 
-						#print from where the eval was take, and weighted sum
-						my $tag = $key;
-						$tag =~ s/\(.*//gi;
-						$tag =~ s/\//_/gi;
-						$tag =~ s/ /_/gi;
-						$tag =~ s/ $//;
-						$tag =~ s/_$//;
-						$key_pairs .=
-						  "\t\t<$tag NAME=\"$val\" LABEL=\"$val\"" . " VALUE=\""
-						  . ceil(
-							(
-								$category->{$feature}->{$key}->{$val}
-								  ->{'weight'} / $sum_weight
-							) * 100
-						  )
-						  . "\""
-						  . " TAG=\"TAG_"
-						  . $tagCount . "\""
-						  . " IDFNAME=\""
-						  . $fprefix
-						  . "_IDDOC_"
-						  . $libId
-						  . ".xml\""
-						  . " LIBNAME=\""
-						  . $category->{$feature}->{$key}->{$val}->{'libName'}
-						  . "\"/>\n";
-
-						$id_list .= $category->{$feature}->{$key}->{$val}->{'id'} . ",";
-						$libName = $category->{$feature}->{$key}->{$val}->{'libName'};
-
-				  		#print id tag and value in seperate file. no nesting required.
-						print IDOUT "<TAG_"
-						  . $tagCount
-						  . " IDLIST=\"$category->{$feature}->{$key}->{$val}->{'id'}\"/>\n";
-						$tagCount++;
-					}
-					$id_list =~ s/,$//;
-					push @{ $print_hash{$key} },
-					  {
-						'key'      => $key,
-						'weight'   => $sum_weight,
-						'sub-cat'  => $key_pairs,
-						'idList'   => $id_list,
-						'libName'  => $libName,
-						'tagCount' => $tagCount
-					  };
-					$total_weight += $sum_weight;
+			  #print id tag and value in seperate file. no nesting required.
+					print IDOUT "<TAG_"
+					  . $tagCount
+					  . " IDLIST=\"$category->{$feature}->{$key}->{$val}->{'id'}\"/>\n";
 					$tagCount++;
 				}
-
-				foreach my $k (%print_hash) {
-					my $f = $print_hash{$k};
-					foreach my $g (@$f) {
-						$g->{key} =~ s/\(.*//gi;
-						$g->{key} =~ s/\//_/gi;
-						$g->{key} =~ s/ /_/gi;
-						$g->{key} =~ s/ $//;
-						$g->{key} =~ s/_$//;
-						print OUT
-						  "<$cname NAME=\"$g->{key}\" LABEL=\"$g->{key}\""
-						  . " VALUE=\""
-						  . ceil( ( $g->{'weight'} / $total_weight ) * 100 )
-						  . "\""
-						  .
-
-						  #" IDLIST=\"$g->{idList}\"";
-						  " TAG=\"TAG_"
-						  . $g->{tagCount} . "\""
-						  . " IDFNAME=\""
-						  . $fprefix
-						  . "_IDDOC_"
-						  . $libId
-						  . ".xml\"";
-
-						if ( $cname =~ /library/i ) {
-							print OUT " LIBNAME=\"$g->{libName}\">\n";
-						}
-						else {
-							print OUT ">\n";
-						}
-
-						print OUT $g->{'sub-cat'};
-						print OUT "</$cname>\n";
-
-				  		#print id tag and value in seperate file. no nesting required.
-						print IDOUT "<TAG_"
-						  . $g->{'tagCount'}
-						  . " IDLIST=\"$g->{'idList'}\"/>\n";
-					}
-				}
-				print OUT "</root>";
-				print IDOUT "</root>";
-				close(OUT);
-				close(IDOUT);
+				$id_list =~ s/,$//;
+				push @{ $print_hash{$key} },
+				  {
+					'key'      => $key,
+					'weight'   => $sum_weight,
+					'sub-cat'  => $key_pairs,
+					'idList'   => $id_list,
+					'libName'  => $libName,
+					'tagCount' => $tagCount
+				  };
+				$total_weight += $sum_weight;
+				$tagCount++;
 			}
+
+			foreach my $k (%print_hash) {
+				my $f = $print_hash{$k};
+				foreach my $g (@$f) {
+					$g->{key} =~ s/\(.*//gi;
+					$g->{key} =~ s/\//_/gi;
+					$g->{key} =~ s/ /_/gi;
+					$g->{key} =~ s/ $//;
+					$g->{key} =~ s/_$//;
+					print OUT
+					  "<$cname NAME=\"$g->{key}\" LABEL=\"$g->{key}\""
+					  . " VALUE=\""
+					  . ceil( ( $g->{'weight'} / $total_weight ) * 100 )
+					  . "\""
+					  .
+
+					  #" IDLIST=\"$g->{idList}\"";
+					  " TAG=\"TAG_"
+					  . $g->{tagCount} . "\""
+					  . " IDFNAME=\""
+					  . $fprefix
+					  . "_IDDOC_"
+					  . $libId
+					  . ".xml\"";
+
+					if ( $cname =~ /library/i ) {
+						print OUT " LIBNAME=\"$g->{libName}\">\n";
+					}
+					else {
+						print OUT ">\n";
+					}
+
+					print OUT $g->{'sub-cat'};
+					print OUT "</$cname>\n";
+
+			  #print id tag and value in seperate file. no nesting required.
+					print IDOUT "<TAG_"
+					  . $g->{'tagCount'}
+					  . " IDLIST=\"$g->{'idList'}\"/>\n";
+				}
+			}
+			print OUT "</root>";
+			print IDOUT "</root>";
+			close(OUT);
+			close(IDOUT);
 		}
-		print "INFO: Files for library $libId written.\n\n";
-	}    #end lib output process
-}
+	}
+	print STDOUT "INFO: Files for library $libId written.\n\n";
+}    #end lib output process
 
-# $getlib->finish();
-$dbh0->disconnect;
-$dbh->disconnect;
-
-timer();    #call timer to see when process ended.
+$logger->info("ENVIRONMENTAL library stats for $options{sample} complete");
 exit(0);
 
 ###############################################################################
@@ -398,73 +377,20 @@ exit(0);
 ###############################################################################
 
 sub check_parameters {
-	my $options = shift;
+    my $options = shift;
 
-	my $flag = 0;
+    my @required = qw(input output);
 
-	# if library list file or library file has been specified
-	# get library info. server, id and library name.
-	if ( ( defined $options{input} ) && ( length( $options{input} ) ) ) {
-		$libObject = $libinfo->getLibFileInfo( $options{input} );
-		$flag      = 1;
-	}
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+    }
 
-	# if server is not specifed and library file is not specifed show error
-	if ( !$options{server} && !$flag ) {
-		pod2usage(
-			{
-				-exitval => 2,
-				-message => "error message",
-				-verbose => 1,
-				-output  => \*STDERR
-			}
-		);
-		exit(-1);
-	}
+    system ("mkdir -p $options{outdir}/idFiles");
+    system ("mkdir -p $options{outdir}/xDocs");
 
-	# if exec env is not specified show error
-	unless ( $options{env} ) {
-		pod2usage(
-			{
-				-exitval => 2,
-				-message => "error message",
-				-verbose => 1,
-				-output  => \*STDERR
-			}
-		);
-		exit(-1);
-	}
-
-	# if no library info set library to -1;
-	unless ( $options{library} ) {
-		$options{library} = -1;
-	}
-
-	# if getting info from library file set server and library info.
-	if ($flag) {
-		$options{library} = $libObject->{id};
-		$options{server}  = $libObject->{server};
-	}
-
-	system ("mkdir -p $options{outdir}/idFiles");
-	system ("mkdir -p $options{outdir}/xDocs");
-
-	$dbh0 = DBI->connect(
-		"DBI:mysql:database="
-		  . $utils->db_live_name
-		  . ";host="
-		  . $utils->db_live_host,
-		$utils->db_live_user,
-		$utils->db_live_pass,
-		{ PrintError => 1, RaiseError => 1, AutoCommit => 1 }
-	);
-
-	$dbh = DBI->connect(
-		"DBI:mysql:database=" . $utils->db_name . ";host=" . $utils->db_host,
-		$utils->db_user,
-		$utils->db_pass,
-		{ PrintError => 1, RaiseError => 1, AutoCommit => 1 }
-	);
 }
 
 ###############################################################################
@@ -610,7 +536,7 @@ sub timer {
 		$dayOfWeek,  $dayOfYear, $daylightSavings
 	  )
 	  = localtime();
-	  
+
 	my $year    = 1900 + $yearOffset;
 	my $theTime = "$hour:$minute:$second, $weekDays[$dayOfWeek] $months[$month] $dayOfMonth, $year";
 	print "Time now: " . $theTime . "\n";

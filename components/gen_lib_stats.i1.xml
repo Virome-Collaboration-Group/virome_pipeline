@@ -10,24 +10,8 @@
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/gen_lib_stats</executable>
             <param>
-                <key>--server</key>
-                <value>$;SERVER_NAME$;</value>
-            </param>
-            <param>
-                <key>--library</key>
-                <value>$;LIBRARY_ID$;</value>
-            </param>
-            <param>
-                <key>--env</key>
-                <value>$;LOCATION$;</value>
-            </param>
-            <param>
                 <key>--input</key>
                 <value>$;I_FILE_PATH$;</value>
-            </param>
-            <param>
-                <key>--lookupDir</key>
-                <value>$;LOOKUP_DIR$;</value>
             </param>
             <param>
                 <key>--outdir</key>
