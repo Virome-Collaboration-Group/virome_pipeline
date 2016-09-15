@@ -160,7 +160,7 @@ my %sequenceLookup;
 my $libraryId = 1;
 
 if ($options{subjectDB} =~ /^uniref100p$|^metagenomes$/i) {
-	tie(%sequenceLookup, 'MLDBM', $options{seqlookupdir}."/sequence_".$libraryId.".ldb);
+	tie(%sequenceLookup, 'MLDBM', $options{seqlookupdir}."/sequence_".$libraryId.".ldb");
 }
 
 while (<BTAB>) {
@@ -218,7 +218,7 @@ sub check_parameters {
 	my $options = shift;
 
 	#### make sure sample_file and output_dir were passed
-    my @required = qw(input output_dir subjectDB seqlookup);
+    my @required = qw(input output_dir subjectDB seqlookupdir);
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {
@@ -328,7 +328,7 @@ sub expand {
 
         push (@new, @hsp[3..$#hsp]);
 
-        @new = map {$util->trim($_)} @new;
+        @new = map {$utils->trim($_)} @new;
 
         #### create a hash with lineage, and each database
         #### resulting hash is of following format
@@ -564,7 +564,7 @@ sub modifyDescription {
 
     push (@new, @hsp[3..$#hsp]);
 
-    @new = map {$util->trim($_)} @new;
+    @new = map {$utils->trim($_)} @new;
 
 	return join("\t", @new);
 }
