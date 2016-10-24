@@ -8,7 +8,7 @@ i.e. 2 components.
 
 =head1 SYNOPSIS
 
-USAGE: virome_little_run_pipeline.pl 
+USAGE: virome_little_run_pipeline.pl
             --template_directory=/path/to/some_dir/
             --repository_root=/path/to/project_dir
             --id_repository=/path/to/foo/id_repository
@@ -22,7 +22,7 @@ B<--template_directory,-t>
     INI configs
 
 B<--repository_root,-r>
-    Also known as a project area, under this directory we should find 
+    Also known as a project area, under this directory we should find
 
 B<--id_repository,-i>
     Path to some global-level ID repository.  Will only be used to pull a pipeline ID.
@@ -33,7 +33,7 @@ B<--ergatis_ini,-e>
 B<--fasta,-f>
     Path to the input FASTA file
 
-B<--log,-l> 
+B<--log,-l>
     Log file
 
 B<--help,-h>
@@ -110,10 +110,10 @@ if (defined $options{log}) {
 ##############################
 my $fasta = $options{'fasta'};
 
-my $template = Ergatis::SavedPipeline->new( 
+my $template = Ergatis::SavedPipeline->new(
                template => "$options{template_directory}/pipeline.layout");
 
-my $pipeline = $template->write_pipeline( repository_root => $options{repository_root}, 
+my $pipeline = $template->write_pipeline( repository_root => $options{repository_root},
                                           id_repository => $options{id_repository} );
 
 ## here you can use Ergatis::ConfigFiles to edit some of the newly-written
@@ -132,15 +132,20 @@ $fasta_size_filter_config->RewriteConfig();
 
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
 
-$pipeline->run( ergatis_cfg => $ergatis_cfg );
+# The 'block' term is used to make the pipeline invocation synchronous, so that
+# we can determine success/failure by the return and use that to determine this
+# script's exit value.
+$success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
+                           block       => 1
+                         );
 
+## Determine the exit value based on the success of the pipeline.
+my $exit_value = ($success) ? 0 : 1;
+
+exit $exit_value;
 
 ##############################
 ##############################
-
-
-exit(0);
-
 
 sub _log {
     my $msg = shift;
@@ -151,7 +156,7 @@ sub _log {
 
 sub check_parameters {
     my $options = shift;
-    
+
     ## make sure required arguments were passed
     my @required = qw( template_directory repository_root id_repository ergatis_ini fasta);
     for my $option ( @required ) {
