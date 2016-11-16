@@ -126,6 +126,11 @@ my $fasta_size_filter_config = new Ergatis::ConfigFile(
 $fasta_size_filter_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $fasta_size_filter_config->RewriteConfig();
 
+#### final dump input file setup
+my $dump_db_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
+$dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
+$dump_db_config->RewriteConfig();
 
 
 ## Get ready to rumble . . .
