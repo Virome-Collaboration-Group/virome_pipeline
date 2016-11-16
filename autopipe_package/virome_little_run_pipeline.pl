@@ -140,7 +140,7 @@ my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
 # The 'block' term is used to make the pipeline invocation synchronous, so that
 # we can determine success/failure by the return and use that to determine this
 # script's exit value.
-$success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
+my $success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
                            block       => 1
                          );
 
