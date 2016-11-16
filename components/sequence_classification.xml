@@ -3,7 +3,7 @@
 <commandSetRoot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation='commandSet.xsd'>
     <commandSet type="serial">
         <state>incomplete</state>
-        <name>viromeClassificatonXML</name>
+        <name>sequence_classification</name>
         <!--Preprocessing-->
         <command>
             <type>RunUnixCommand</type>
@@ -14,13 +14,13 @@
         </command>
         <command>
             <type>RunUnixCommand</type>
-            <name>create temp directory</name>
+            <name>create output directory</name>
             <state>incomplete</state>
             <executable>mkdir</executable>
             <arg>-p -m 777 $;OUTPUT_DIRECTORY$;</arg>
         </command>
         <!--Iterator-->
         <INCLUDE file="$;DOCS_DIR$;/file_iterator_template.xml" keys="$;ITERATOR_NAME$;=ITERATOR1,$;ITERATOR_XML$;=ITERATOR1_XML"/>
-        <!--Postprocessing--> 
+        <!--Postprocessing-->
     </commandSet>
 </commandSetRoot>

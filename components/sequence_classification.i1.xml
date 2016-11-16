@@ -6,7 +6,7 @@
         <!--Processing-->
         <command>
             <type>RunUnixCommand</type>
-            <name>Create VIROME Classification XML</name>
+            <name>Create sequence Classification XML</name>
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/sequence_classification</executable>
             <param>

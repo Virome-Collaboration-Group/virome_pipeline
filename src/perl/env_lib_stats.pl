@@ -62,8 +62,6 @@ B<--help,-h>
 use strict;
 use warnings;
 use DBI;
-use Switch;
-use LIBInfo;
 use UTILS_V;
 use POSIX qw(ceil floor);
 use Pod::Usage;
@@ -379,7 +377,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

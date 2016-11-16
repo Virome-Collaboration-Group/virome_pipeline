@@ -42,7 +42,6 @@ use warnings;
 use IO::File;
 use POSIX qw/ceil/;
 use DBI;
-use LIBInfo;
 use UTILS_V;
 use XML::Writer;
 use Pod::Usage;
@@ -299,46 +298,17 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my $flag = 0;
+    my @required = qw(input outdir);
 
-    # if library list file or library file has been specified
-    # get library info. server, id and library name.
-    if ((defined $options{input}) && (length($options{input}))){
-		$libObject = $libinfo->getLibFileInfo($options{input});
-		$flag = 1;
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
     }
 
-    # if server is not specifed and library file is not specifed show error
-    if (!$options{server} && !$flag){
-		pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-		exit(-1);
-    }
-
-    # if exec env is not specified show error
-    unless ($options{env}) {
-		pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-		exit(-1);
-    }
-
-    # if no library info set library to -1;
-    unless ($options{library}){
-        $options{library} = -1;
-    }
-
-    # if getting info from library file set server and library info.
-    if ($flag){
-        $options{library} = $libObject->{id};
-        $options{server} = $libObject->{server};
-    }
-
-	system ("mkdir -p $options{outdir}/idFiles");
-	system ("mkdir -p $options{outdir}/xDocs");
-
-	$dbh0 = DBI->connect("DBI:mysql:database=".$utils->db_live_name.";host=".$utils->db_live_host,
-		$utils->db_live_user, $utils->db_live_pass, {PrintError=>1, RaiseError =>1, AutoCommit =>1});
-
-	$dbh = DBI->connect("DBI:mysql:database=".$utils->db_name.";host=".$utils->db_host,
-		$utils->db_user, $utils->db_pass, {PrintError=>1, RaiseError =>1, AutoCommit =>1});
+    system ("mkdir -p $options{outdir}/idFiles");
+    system ("mkdir -p $options{outdir}/xDocs");
 
 }
 

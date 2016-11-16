@@ -64,12 +64,9 @@ B<--help,-h>
 use strict;
 use warnings;
 use DBI;
-use Switch;
-use LIBInfo;
 use Pod::Usage;
 use Data::Dumper;
 use UTILS_V;
-use MLDBM 'DB_File';
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 
 BEGIN {
@@ -601,7 +598,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

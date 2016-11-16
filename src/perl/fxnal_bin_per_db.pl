@@ -46,11 +46,9 @@ use strict;
 use warnings;
 use IO::File;
 use DBI;
-use LIBInfo;
 use UTILS_V;
 use Tree::Nary;
 use Pod::Usage;
-use Switch;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 BEGIN {
   use Ergatis::Logger;
@@ -60,6 +58,7 @@ my %options = ();
 my $results = GetOptions (\%options,
             			  'input|i=s',
             			  'outdir|o=s',
+                          'lookupdb|b=s',
             			  'log|l=s',
             			  'debug|d=s',
             			  'help|h') || pod2usage();
@@ -85,7 +84,6 @@ my $this;
 my $cmd = "";
 
 $this->{output_dir} = "$options{outdir}/xDocs";
-$this->{scratch} = "$config->{ToolInfo}->{scratch}->{value}/init_db/$options{sample}";
 
 my $libId = 1;
 
@@ -156,9 +154,6 @@ foreach my $db (@dbArray){
 
 $dbh->disconnect;
 
-#### move updated sqlite database back from local to NFS mount
-#$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
-#execute_cmd($cmd);
 
 $logger->info("Functional binning per database for $options{sample} complete");
 exit(0);
@@ -170,7 +165,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir lookupdb);
 
     foreach my $key (@required) {
         unless ($options{$key}) {
@@ -202,7 +197,7 @@ sub createLocalTreeR {
 
 	my $acc_stmt;
 
-	my $dbh1 = DBI->connect("dbi:SQLite:dbname=$config->{ToolInfo}->{scratch}->{value}/init_db/lookup.db",
+	my $dbh1 = DBI->connect("dbi:SQLite:dbname=$options{lookupdb}",
 							"", "", { RaiseError => 1}
 							) or die $DBI::errstr;
 
@@ -293,7 +288,7 @@ sub createLocalTreeAU {
 	my $local_tree = Tree::Nary->new($r_node);
 	my $acc_stmt = "";
 
-	my $dbh1 = DBI->connect("dbi:SQLite:$config->{ToolInfo}->{scratch}->{value}/init_db/lookup.db",
+	my $dbh1 = DBI->connect("dbi:SQLite:$options{lookupdb}",
 							"", "", { RaiseError => 1}
 							) or die $DBI::errstr;
 

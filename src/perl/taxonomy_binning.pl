@@ -47,7 +47,6 @@ use warnings;
 use IO::File;
 use POSIX qw/ceil/;
 use DBI;
-use LIBInfo;
 use UTILS_V;
 use XML::Writer;
 use Pod::Usage;
@@ -58,14 +57,11 @@ BEGIN {
 
 my %options = ();
 my $results = GetOptions (\%options,
-                          'server|s=s',
-                          'library|b=s',
-						  'env|e=s',
-                          'input|i=s',
-						  'outdir|o=s',
-                          'log|l=s',
-                          'debug|d=s',
-                          'help|h') || pod2usage();
+            			  'input|i=s',
+            			  'outdir|o=s',
+            			  'log|l=s',
+            			  'debug|d=s',
+            			  'help|h') || pod2usage();
 
 ## display documentation
 if( $options{'help'} ){
@@ -181,7 +177,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

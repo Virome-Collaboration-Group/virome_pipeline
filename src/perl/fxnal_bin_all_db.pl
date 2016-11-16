@@ -129,11 +129,6 @@ $id_writer->end();
 $xml_out->close();
 $id_out->close();
 
-#### move updated sqlite database back from local to NFS mount
-#$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
-#execute_cmd($cmd);
-
-
 $logger->info("Functional binning all database for $options{sample} complete");
 exit(0);
 
@@ -143,7 +138,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

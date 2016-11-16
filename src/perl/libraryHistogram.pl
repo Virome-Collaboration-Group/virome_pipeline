@@ -47,7 +47,6 @@ use strict;
 use warnings;
 use IO::File;
 use DBI;
-use LIBInfo;
 use UTILS_V;
 use XML::Writer;
 use Pod::Usage;
@@ -84,10 +83,7 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError
 my $this;
 my $cmd = "";
 
-my $this;
-my $cmd = "";
-
-$this->{output_dir} = "$options{output_dir}/xDocs";
+$this->{output_dir} = "$options{outdir}/xDocs";
 
 my $libId = 1;
 
@@ -131,10 +127,6 @@ $gc_sel->execute($libId);
 $rslt = $gc_sel->fetchall_arrayref({});
 binGC($rslt, $libId, "GC");
 
-#### move updated sqlite database back from local to NFS mount
-#$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
-#execute_cmd($cmd);
-
 $logger->info("Library histogram for $options{sample} completed");
 
 exit(0);
@@ -146,7 +138,7 @@ exit(0);
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {
@@ -254,7 +246,7 @@ sub binGC {
 sub printXML {
     my ($lib, $type, $arr) = @_;
 
-    my $filename = $file_loc . "/".$type."_HISTOGRAM_".$lib.".xml";
+    my $filename = $this->{output_dir} . "/".$type."_HISTOGRAM_".$lib.".xml";
 
     my $output = new IO::File(">$filename") or die "Could not open file $filename to write\n";
     my $writer = new XML::Writer(OUTPUT=>$output);

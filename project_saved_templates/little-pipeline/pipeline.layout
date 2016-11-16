@@ -119,5 +119,9 @@
             <state>incomplete</state>
             <name>db-upload.orfan</name>
         </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>dump_db.default</name>
+        </commandSet>
     </commandSet>
 </commandSetRoot>

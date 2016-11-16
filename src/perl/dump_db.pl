@@ -35,7 +35,7 @@ B<--help,-h>
 
 Dumps the contents of a database into a directory full of table tab files
 
-=head1  INPUT                                                                                                                                                                                                                              
+=head1  INPUT
 Output of db-load-library. Essentially a tab-dleimmited file containing:
 library_id    library_name    prefix    server    processing_server
 
@@ -43,144 +43,113 @@ library_id    library_name    prefix    server    processing_server
 
 Directory filled with tab-delimmited table dumps.
 
-=head1  CONTACT                                                                                                                                                                                                                            
+=head1  CONTACT
 
     Daniel Nasko
-    dan.nasko@gmail.com                                                                                                                                                                                                                    
+    dan.nasko@gmail.com
 
-=cut                                                                                                                                                                                                                                        
+=cut
 
 use strict;
 use DBI;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
+use File::Basename;
 use UTILS_V;
 
-my ($info,$outdir,$mgol,$uniref,$pipeline,$pipelineid);
+BEGIN {
+  use Ergatis::Logger;
+}
+
+##############################################################################
 my %options = ();
 my $results = GetOptions (\%options,
-                          'info|i=s'	=>	\$info,
-			  'outdir|o=s'  =>      \$outdir,
-			  'mgol|m=s'    =>      \$mgol,
-			  'uniref|u=s'  =>      \$uniref,
-			  'pipeline|p=s'=>      \$pipeline,
-	  		  'pipelineid|r=s' =>   \$pipelineid,
-			  'help|h') || pod2usage();
+                          'input|i=s',
+						  'output_dir|o=s',
+						  'mgol|m=s',
+                          'uniref|u=s',
+                          'pipeline|p=s',
+                          'pipelineid|r=s',
+						  'database|b=s',
+                          'log|l=s',
+                          'debug|d=s',
+                          'help|h') || pod2usage();
 
-## display documentation                                                                                                                                                                                                                    
+my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
+my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
+                                  'LOG_LEVEL'=>$options{'debug'});
+$logger = $logger->get_logger();
+
+## display documentation
 if( $options{'help'} ){
     pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
-
+##############################################################################
 ## make sure everything passed was peachy
-pod2usage( -msg  => "ERROR!  Required argument -i not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $info);
-pod2usage( -msg  => "ERROR!  Required argument -o not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $outdir);
-pod2usage( -msg  => "ERROR!  Required argument -m not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $mgol);
-pod2usage( -msg  => "ERROR!  Required argument -u not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $uniref);
-pod2usage( -msg  => "ERROR!  Required argument -p not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $pipeline);
-pod2usage( -msg  => "ERROR!  Required argument -r not found.\n", -exitval => 0, -verbose => 2, -output => \*STDERR)  if (! $pipelineid);
+&check_parameters(\%options);
 
-## MySQL Server information
-# my $db_name = "virome";
-# my $db_host = "virome-db.igs.umaryland.edu";
-# my $db_user = "dnasko";
-# my $db_pass = "dnas_76";
-# my @row;
+my $filename = fileparse($options{input}, qr/\.[^.]*/);
+my $outdir = "/opt/output". $filename ."_". timestamp();
 
-# my $dbh = DBI->connect("DBI:mysql:database=".$db_name.";host=".$db_host, $db_user, $db_pass,{PrintError=>1, RaiseError =>1, AutoCommit =>1});
-# my $select_sql = qq/SELECT `user` FROM library WHERE id = ? ;/;
-# my $sth_select = $dbh->prepare($select_sql);
+system ("mkdir -p $outdir")
+system ("mkdir -p $outdir/idFiles");
+system ("mkdir -p $outdir/xDocs");
+###############################################################################
+$logger->info("Database dump for $filename started");
+
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
 ###################################
 ## Let's Gather Some Information ##
 ###################################
-my ($library_id,$library_name,$prefix,$server,$processing_db,$root,$user);
-open(IN,"<$info") || die "\n\n Cannot open the db-load-library file: $info\n\n";
-while(<IN>) {
-    chomp;
-    my @A = split(/\t/, $_);
-    $library_id = $A[0];
-    $library_name = $A[1];
-    $prefix = $A[2];
-    $server = $A[3];
-    $processing_db = $A[4];
-}
-close(IN);
+my $library_id = 1;
+my $library_name = $filename;
+my $prefix = "NAN";
 
-print "
-Library ID   = $library_id
-Library Name = $library_name
-Prefix       = $prefix
-Server       = $server
-Proc DB      = $processing_db
-";
-
-# $sth_select->execute ($library_id);
-# while (@row = $sth_select->fetchrow_array) {
-#     $user = $row[0];
-# }
-# print "User      = $user\n";
-if ($processing_db =~ m/diag/) {
-    $root = "/opt/projects/virome/";
-}
-else {
-    die "\n\n Cannot determine the root given the processing_db: $processing_db\n\n";
-}
-
-##########################
-## Dumping the Database ##
-##########################
-
-my %processing_databases = (
-    'diag1'  =>  'virome_processing_1',
-    'diag2'  =>  'virome_processing_2',
-    'diag3'  =>  'virome_processing_3',
-    'diag4'  =>  'virome_processing_4',
-    'diag5'  =>  'virome_processing_5',
-    'diag'   =>  'virome_processing'
-    );
 my @tables = ('blastp','blastn','sequence','statistics','sequence_relationship','tRNA');
-my $stg_db_name = '';
-if (exists $processing_databases{$processing_db}) {
-    $stg_db_name = $processing_databases{$processing_db};
-}
-else { die "\n Invalid staging database provided: $processing_db\n"; }
-print `mkdir -p $outdir/../$prefix`;
 
 foreach my $table (@tables) {
     print "Dumping table $table\n";
-    system("mysql $stg_db_name -udnasko -hdnode001.igs.umaryland.edu -pdnas_76 -e\"SELECT * FROM $table\" > $outdir/../$prefix/$table.tab");
 
-    #### append # to first line 
-    open(TMP, ">", "$outdir/$table.tab2") || die "\n cannot write to: $outdir/$table.tab2\n";
-    print TMP "#";
+    open(OUT, ">", "$outdir/${table}.dump.tbl") or $logger->logdie("Could not open file to write $outdir/${table}.dump.tbl");
 
-    open(IN, "<", "$outdir/../$prefix/$table.tab") || die "\n Cannot open: $outdir/../$prefix/$table.tab\n";
-    while(<IN>) {
-	    chomp;
-	    print TMP $_ . "\n";
+    print OUT "PRAGMA synchronous=OFF;\n";
+    print OUT "PRAGMA count_changes=OFF;\n";
+    print OUT "PRAGMA journal_mode=MEMORY;\n";
+    print OUT "PRAGMA temp_store=MEMORY;\n";
+    print OUT ".separator \"\\t\"\n";
+    print OUT ".headers on\n";
+    print OUT ".out $outdir/$table.tab\n";
+    print OUT "select * from $table\n";
+
+    close(OUT);
+
+    $cmd = "sqlite3 $options{database} < $outdir/${table}.dump.tbl";
+
+    system($cmd);
+
+    if (( $? >> 8 ) != 0 ){
+    	print STDERR "command failed: $!\n";
+    	print STDERR $cmd."\n";
+    	exit($?>>8);
     }
-    close(TMP);
-    close(IN);
 
-    print `mv $outdir/$table.tab2 $outdir/../$prefix/$table.tab`;
-    my $lines = `grep -c "^" $outdir/../$prefix/$table.tab`; chomp($lines);
-    if ($lines == 1) {
-	    print `rm $outdir/../$prefix/$table.tab`;
-	    print `touch $outdir/../$prefix/$table.tab`;
-    }
+    #### add # to header of each table output
+    $cmd = "sed -i '1s/^/#/' $outdir/$table.tab";
+    system($cmd);
 }
 
-print `mkdir -p $outdir/../$prefix/xDocs`;
-print `mkdir -p $outdir/../$prefix/idFiles`;
-print `cp /opt/projects/virome/virome-cache-files/$pipelineid/xDocs/*_$library_id.xml $outdir/../$prefix/xDocs`;
-print `cp /opt/projects/virome/virome-cache-files/$pipelineid/idFiles/*_$library_id.txt $outdir/../$prefix/idFiles`;
+$cmd = "cp $options{output_dir}/xDocs/* $outdir/xDocs";
+system($cmd);
+
+$cmd = "cp $options{output_dir}/idFiles/* $outdir/idFiles";
+system($cmd);
 
 #####################################################################
 ## Print out the version control info to the version_info.txt file ##
 #####################################################################
 
-open(OUT,">$outdir/../$prefix/version_info.txt") || die "\n Cannot open the file: $outdir/../$prefix/version_info.txt\n";
+open(OUT, ">", "$outdir/version_info.txt") || die "\n Cannot open the file: $outdir/version_info.txt\n";
 print OUT "fxndbLookupVersion=" . $uniref . "\n";
 print OUT "mgolVersion=" . $mgol . "\n";
 print OUT "pipelineVersion=" . $pipeline . "\n";
@@ -191,7 +160,39 @@ close(OUT);
 #########################
 ## Create the Tar Ball ##
 #########################
-if (-e "$outdir/../$prefix.tar.gz" ) { print `rm $outdir/../$prefix.tar.gz`; }
-print `tar -czvf $outdir/../$prefix.tar.gz --directory=$outdir/../ $prefix`;
+if (-e "$outdir.tar.gz" ) {
+    print `rm $outdir.tar.gz`;
+}
+print `tar -czvf $outdir.tar.gz --directory=$outdir $outdir`;
 
-exit 0;
+$logger->info("Database dump for $filename completed");
+exit(0);
+
+###############################################################################
+sub check_parameters {
+    my @required = qw(input mgol uniref pipeline pipelineid database output_dir);
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("No input defined, plesae read perldoc $0\n\n");
+        }
+    }
+}
+
+###############################################################################
+sub timestamp {
+	my @months   = qw(01 02 03 04 05 06 07 08 09 10 11 12);
+	my @weekDays = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+	my (
+		$second,     $minute,    $hour,
+		$dayOfMonth, $month,     $yearOffset,
+		$dayOfWeek,  $dayOfYear, $daylightSavings
+	  )
+	  = localtime();
+
+	my $year    = 1900 + $yearOffset;
+	my $theTime = $year ."". $months{$month} ."". $dayOfMonth ."". $hour ."". $minute ."". $second;
+
+    return $theTime;
+}

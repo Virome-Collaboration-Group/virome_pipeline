@@ -41,11 +41,9 @@ B<--help,-h>
 
 =cut
 
-se strict;
+use strict;
 use warnings;
 use DBI;
-use Switch;
-use LIBInfo;
 use Pod::Usage;
 use Data::Dumper;
 use UTILS_V;
@@ -74,7 +72,7 @@ my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
 				 'LOG_LEVEL'=>$options{'debug'});
 $logger = $logger->get_logger();
 
-$logger->info("ORFAN library stats for $options{sample} started");
+$logger->info("ORFAN library stats started");
 
 ##############################################################################
 #### DEFINE GLOBAL VAIRABLES.
@@ -83,7 +81,7 @@ my $this;
 my $cmd = "";
 my $max_id = -1;
 
-$this->{output_dir} = "$options{outdir}/orfan/";
+$this->{output_dir} = "$options{outdir}/idFiles/";
 $this->{input_dir} = "$options{outdir}/idFiles/";
 
 ## make sure everything passed was peachy
@@ -92,8 +90,7 @@ $this->{input_dir} = "$options{outdir}/idFiles/";
 #init db connection
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
-
-my $filename = "$this->{output_dir}/all.tab";
+my $filename = "$this->{output_dir}/orfanList.blastp.tab";
 my $libId = 1;
 my $seq_info = $dbh->prepare(qq{SELECT name,size,id FROM sequence where id=?});
 
@@ -135,19 +132,14 @@ foreach my $id (@sequenceIDs) {
 
 close(OUT);
 
-#### move updated sqlite database back from local to NFS mount
-#$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
-#execute_cmd($cmd);
-
-
-$logger->info("ORFAN library stats for $options{sample} completed");
+$logger->info("ORFAN library stats completed");
 exit(0);
 
 ############################################################################
 sub check_parameters {
     my $options = shift;
 
-    my @required = qw(input output);
+    my @required = qw(input outdir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {

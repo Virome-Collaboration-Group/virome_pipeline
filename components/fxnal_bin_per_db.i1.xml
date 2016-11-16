@@ -18,6 +18,10 @@
                 <value>$;OUTPUT_DIRECTORY$;</value>
             </param>
             <param>
+                <key>--lookupdb</key>
+                <value>$;LOOKUP_DB$;</value>
+            </param>
+            <param>
                 <key>stdout</key>
                 <value>$;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$;/$;COMPONENT_NAME$;.stdout</value>
             </param>
