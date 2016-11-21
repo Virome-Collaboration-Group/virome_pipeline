@@ -32,7 +32,7 @@
                 </param>
                 <param>
                     <key>--regex</key>
-                    <value>".*orfanList_.*\.txt"</value>
+                    <value>".*orfanList.blastp.tab"</value>
                 </param>
                 <param>
                     <key>--output_list</key>

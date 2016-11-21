@@ -89,9 +89,10 @@ if( $options{'help'} ){
 &check_parameters(\%options);
 
 my $filename = fileparse($options{input}, qr/\.[^.]*/);
-my $outdir = "/opt/output". $filename ."_". timestamp();
+my $outdir = "/opt/output/". $filename ."_". timestamp();
+my $cmd = "";
 
-system ("mkdir -p $outdir")
+system ("mkdir -p $outdir");
 system ("mkdir -p $outdir/idFiles");
 system ("mkdir -p $outdir/xDocs");
 ###############################################################################
@@ -120,7 +121,7 @@ foreach my $table (@tables) {
     print OUT ".separator \"\\t\"\n";
     print OUT ".headers on\n";
     print OUT ".out $outdir/$table.tab\n";
-    print OUT "select * from $table\n";
+    print OUT "select * from $table;\n";
 
     close(OUT);
 
@@ -150,9 +151,9 @@ system($cmd);
 #####################################################################
 
 open(OUT, ">", "$outdir/version_info.txt") || die "\n Cannot open the file: $outdir/version_info.txt\n";
-print OUT "fxndbLookupVersion=" . $uniref . "\n";
-print OUT "mgolVersion=" . $mgol . "\n";
-print OUT "pipelineVersion=" . $pipeline . "\n";
+print OUT "fxndbLookupVersion=" . $options{uniref} . "\n";
+print OUT "mgolVersion=" . $options{mgol} . "\n";
+print OUT "pipelineVersion=" . $options{pipeline} . "\n";
 print OUT "prefix=" . $prefix . "\n";
 print OUT "id=" . $library_id . "\n";
 close(OUT);
@@ -192,7 +193,7 @@ sub timestamp {
 	  = localtime();
 
 	my $year    = 1900 + $yearOffset;
-	my $theTime = $year ."". $months{$month} ."". $dayOfMonth ."". $hour ."". $minute ."". $second;
+	my $theTime = $year ."". $months[$month] ."". $dayOfMonth ."". $hour ."". $minute ."". $second;
 
     return $theTime;
 }
