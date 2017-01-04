@@ -14,6 +14,7 @@ USAGE: virome_little_run_pipeline.pl
             --id_repository=/path/to/foo/id_repository
             --ergatis_ini=/path/to/ergatis.ini
             --fasta=/path/to/file.fasta
+            --threads=number_of_max_threads_to_use
 
 =head1 OPTIONS
 
@@ -32,6 +33,9 @@ B<--ergatis_ini,-e>
 
 B<--fasta,-f>
     Path to the input FASTA file
+
+B<--threads,-d>
+    Number of max threads to use during execution of workflow
 
 B<--log,-l>
     Log file
@@ -87,6 +91,7 @@ my $results = GetOptions (\%options,
                           'repository_root|r=s',
                           'id_repository|i=s',
                           'ergatis_ini|e=s',
+                          'threads|d=s',
                           'log|l=s',
                           'help|h') || pod2usage();
 
@@ -132,6 +137,16 @@ my $dump_db_config = new Ergatis::ConfigFile(
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $dump_db_config->RewriteConfig();
 
+#### set max threads limit for rubble blast
+my $rubble_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_default/rubble.uniref.user.config");
+$rubble_config->setval('parameter', '$;THREADS;', $options{threads} );
+$rubble_config->RewriteConfig();
+
+my $rubble_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_default/rubble.mgol.user.config");
+$rubble_config->setval('parameter', '$;THREADS;', $options{threads} );
+$rubble_config->RewriteConfig();
 
 ## Get ready to rumble . . .
 

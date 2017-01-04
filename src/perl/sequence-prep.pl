@@ -120,20 +120,73 @@ while ( my $result = $sth->fetchrow_hashref() ) {
 	}
 }
 
-#use Bio::SeqIO to parse and handle fasta file.
-my $fsa = Bio::SeqIO->new( -file   => $options{input},
-						   -format => 'fasta' );
+open(FHD, "<", $options{input}) || $logger->logdie("Could not open input file $options{input}");
+open (OUT, ">>", $filename) || $logger->logdie("Could not open file $filename");
 
-open (OUT, ">>", $filename) || die $logger->logdie("Could not open file $filename");
+my $header = "";
+my $seq = "";
 
-while (my $seq = $fsa->next_seq) {
-	my $gc = &calculate_gc($seq->seq());
-    my $timestamp = getTimeStamp();
+while(<FHD>) {
+    chomp $_;
 
-	print OUT join("\t", $max_id, "1", $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
+    #### skip coments
+    next if ($_ =~ /^#/);
 
-    $max_id++;
+    #### if header
+    if ($_ =~ /^>/) {
+        #### if we encoutner > (start of new seq) and there is
+        #### data in seq then process previous sequence before current one
+        #### this situaion will occur after first seq is read in.
+        if (length($seq)) {
+            my $gc = &calculate_gc($seq);
+            my $timestamp = getTimeStamp();
+            my $id = $header;
+            $id =~ s/\s.*//;
+            $desc = $header;
+            $desc =~ s/$id\s//;
+
+        	print OUT join("\t", $max_id, "1", $id, $desc, $gc, $seq, length($seq), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
+
+            $max_id++;
+
+            #### reset seq to hold new seq data.
+            $seq = "";
+        }
+
+        #### read new header
+        $header = $_;
+        $header =~ s/^>//;
+    } else {
+        $seq .= $_;
+    }
 }
+
+#### process last seq that was read before end of while loop
+if (length($seq)) {
+    my $gc = &calculate_gc($seq);
+    my $timestamp = getTimeStamp();
+    my $id = $header;
+    $id =~ s/\s.*//;
+    $desc = $header;
+    $desc =~ s/$id\s//;
+
+    print OUT join("\t", $max_id, "1", $id, $desc, $gc, $seq, length($seq), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
+}
+
+close(FHD);
+
+#### use Bio::SeqIO to parse and handle fasta file.
+#my $fsa = Bio::SeqIO->new( -file   => $options{input},
+#						   -format => 'fasta' );
+
+#while (my $seq = $fsa->next_seq) {
+#	my $gc = &calculate_gc($seq->seq());
+#    my $timestamp = getTimeStamp();
+
+#	print OUT join("\t", $max_id, "1", $seq->id, $seq->desc, $gc, $seq->seq(), $seq->length(), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
+
+#    $max_id++;
+#}
 
 close OUT;
 exit(0);

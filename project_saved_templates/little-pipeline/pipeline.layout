@@ -59,6 +59,17 @@
             <state>incomplete</state>
             <name>db-upload.sequence_relationship</name>
         </commandSet>
+
+        <commandSet type="serial">
+      	    <state>incomplete</state>
+            <name>rubble.uniref</name>
+        </commandSet>
+
+        <commandSet type="serial">
+      	    <state>incomplete</state>
+            <name>rubble.mgol</name>
+        </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
             <name>clean_expand_btab.uniref</name>
