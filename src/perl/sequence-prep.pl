@@ -142,7 +142,7 @@ while(<FHD>) {
             my $timestamp = getTimeStamp();
             my $id = $header;
             $id =~ s/\s.*//;
-            $desc = $header;
+            my $desc = $header;
             $desc =~ s/$id\s//;
 
         	print OUT join("\t", $max_id, "1", $id, $desc, $gc, $seq, length($seq), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
@@ -167,7 +167,7 @@ if (length($seq)) {
     my $timestamp = getTimeStamp();
     my $id = $header;
     $id =~ s/\s.*//;
-    $desc = $header;
+    my $desc = $header;
     $desc =~ s/$id\s//;
 
     print OUT join("\t", $max_id, "1", $id, $desc, $gc, $seq, length($seq), "", $timestamp, "0000-00-00 00:00:00", 0, $options{typeId})."\n";
