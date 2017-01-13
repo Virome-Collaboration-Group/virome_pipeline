@@ -177,7 +177,7 @@ if ($threads == 1) {
     my $blast_exe = "blastp -query " . $query .	" -db " . $dbClust . " -out " . $working_dir . "/0-blast_clust/out.btab" . " -evalue " . $evalue . " -outfmt 6" . " -max_target_seqs " . $max_target_seqs . " -task blastp-fast";
     print `$blast_exe`;
 }
-else { para_blastp($query, $dbClust, "$working_dir/0-blast_clust/", $evalue, $threads, $max_target_seqs, "blastp-fast", "6 std ppos"); }
+else { para_blastp($query, $dbClust, "$working_dir/0-blast_clust/", $evalue, $threads, $max_target_seqs, "-task blastp-fast", "6 std ppos"); }
 
 #################################################
 ## 2. Cull the query sequences that have a hit ##
