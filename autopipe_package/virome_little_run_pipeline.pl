@@ -139,13 +139,13 @@ $dump_db_config->RewriteConfig();
 
 #### set max threads limit for rubble blast
 my $rubble_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_unrief/rubble.uniref.user.config");
-$rubble_config->setval('parameter', '$;THREADS;', $options{threads} );
+    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
+$rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
 $rubble_config->RewriteConfig();
 
 my $rubble_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
-$rubble_config->setval('parameter', '$;THREADS;', $options{threads} );
+$rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
 $rubble_config->RewriteConfig();
 
 ## Get ready to rumble . . .
