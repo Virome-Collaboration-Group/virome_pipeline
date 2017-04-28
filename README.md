@@ -11,9 +11,9 @@ If you use VIROME please cite:
 
 > Wommack KE, Bhavsar J, Polson SW, et al. VIROME: a standard operating procedure for analysis of viral metagenome sequences. Stand Genomic Sci. 2012;6(3):427-39.
 
-The VIROME bioinformatics pipeline is controlled using [ergatis](http://ergatis.sourceforge.net) and runs on the [Data Intensive Academic Grid (DIAG)](http://diagcomputing.org) hosted by the [University of Maryland School of Medicine Institutes for Genome Sciences](http://www.igs.umaryland.edu). While this repository is tailored for a system with ergatis installed there are many useful scripts in the /bin directory that some researchers may find useful in their work.
+The VIROME bioinformatics pipeline is controlled using [ergatis](http://ergatis.sourceforge.net). While this repository is tailored for a system with ergatis installed, there are many useful scripts in the /bin directory that some researchers may find useful in their work.
 
-After cloning this repo I typically rename:
+After cloning this repo, we typically rename:
 
     mv virome_pipeline package_virome
 
