@@ -2,15 +2,14 @@
 
 =head1 NAME
 
-tRNAScan-prep.pl - prepare tRNAScan raw output for mysql upload
+tRNAscan-prep.pl - prepare tRNAscan raw output for mysql upload
 
 =head1 SYNOPSIS
 
-USAGE: tRNAScan-prep.pl
+USAGE: tRNAscan-prep.pl
             --input=/path/to/metagene/raw/output
-	    --outdir=/output/directory
-	    -liblist=/library/list/file/from/db-load-library
-            --lookupDir=/dir/where/mldbm/lookup/files/are
+            --outdir=/output/directory
+            --database=/path/to/sqlite3/database.db
           [ --log=/path/to/logfile
             --debug=N
           ]
@@ -20,11 +19,11 @@ USAGE: tRNAScan-prep.pl
 B<--input, -i>
     The full path to metagene raw output
 
-B<--liblist, -ll>
-    Library list file, and output of db-load-library.
+B<--database, -b>
+    Path to sqlite3 database
 
-B<--lookupDir, -ld>
-    Dir where all lookup files are stored.
+B<--outdir, -o>
+    output directory location
 
 B<--debug,-d>
     Debug level.  Use a large number to turn on verbose debugging.
@@ -54,12 +53,10 @@ to the tRNAScan-SE raw output file list.  One file per line.
 use strict;
 use warnings;
 use DBI;
-use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
-use MLDBM 'DB_File';
-use Fcntl qw( O_TRUNC O_RDONLY O_RDWR O_CREAT);
-use UTILS_V;
 use Data::Dumper;
+use Fcntl qw( O_TRUNC O_RDONLY O_RDWR O_CREAT);
+use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 
 BEGIN {
   use Ergatis::Logger;
@@ -68,13 +65,12 @@ BEGIN {
 ###############################################################################
 my %options = ();
 my $results = GetOptions (\%options,
-                          'input|i=s',
-                          'outdir|od=s',
-                          'liblist|ll=s',
-                          'lookupDir|ld=s',
-                          'log|l=s',
-                          'debug|d=s',
-                          'help|h') || pod2usage();
+                            'input|i=s',
+                            'outdir|o=s',
+                            'database|b=s',
+                            'log|l=s',
+                            'debug|d=s',
+                            'help|h') || pod2usage();
 
 my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
 my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
@@ -99,14 +95,16 @@ unless(-s $options{input} > 0){
 }
 
 ###############################################################################
-my $utils = new UTILS_V;
+#### database connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
-my $libraryId = $utils->get_libraryId_from_list_file($options{input},$options{liblist},"tRNAScan");
-my $lookup_file = $options{'lookupDir'}."/sequence_".$libraryId.".ldb";
+my $sth = $dbh->prepare('SELECT id,name FROM sequence WHERE 1');
+$sth->execute;
 
-# tie in sequence lookup db.
-tie(my %sequenceLookup, 'MLDBM', $lookup_file);
-$utils->set_sequence_lookup(\%sequenceLookup);
+my %sequence_hash;
+while ( my $result = $sth->fetchrow_hashref() ) {
+	$sequence_hash{$result->{name}} = $result->{id};
+}
 
 ## tRNAScan-SE score threshold
 my $threshold = 20.00;
@@ -123,22 +121,18 @@ while (<DAT>){
         chomp $_;
         my @info = split(/\t/,$_);
 
-        ## get sequenceId.
-        my $sequenceId = $utils->get_sequenceId($utils->trim($info[0]));
-
         ## check for duplicate entry and threshold cut off.
         if ($info[8] >= $threshold) {
             $info[4] =~ s/\$([a-z])/\u$1/ig;
             $info[4] =~ s/pse/Pseudo/i;
             $info[4] =~ s/und/Undef/i;
 
-            print OUT join("\t",$utils->trim($sequenceId), $utils->trim($info[1]), $utils->trim($info[2]), $utils->trim($info[3]),
-            	   $utils->trim($info[4]), $utils->trim($info[5]), $utils->trim($info[6]), $utils->trim($info[7]), $utils->trim($info[8]))."\n";
+            print OUT join("\t",$sequence_hash{trim($info[0])}, trim($info[1]), trim($info[2]), trim($info[3]),
+            	   trim($info[4]), trim($info[5]), trim($info[6]), trim($info[7]), trim($info[8]))."\n";
         }
     }
 }
 
-untie(%sequenceLookup);
 close DAT;
 close OUT;
 
@@ -146,10 +140,22 @@ exit(0);
 
 ###############################################################################
 sub check_parameters {
-  ## at least one input type is required
-  unless ($options{input} && $options{outdir} && $options{lookupDir} && $options{liblist}){
-      pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-      $logger->logdie("No input defined, plesae read perldoc $0\n\n");
-      exit(1);
-  }
+    my @required = qw(input outdir database);
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            pod2usage({-exitval => 2,  -message => "ERROR: Input $key not defined", -verbose => 1, -output => \*STDERR});
+            $logger->logdie("Input option $key not defined, plesae read perldoc $0\n\n");
+        }
+    }
+}
+
+###############################################################################
+sub trim {
+    my $str = shift;
+
+    $str =~ s/^\s+//;
+    $str =~ s/\s+$//;
+
+    return $str;
 }

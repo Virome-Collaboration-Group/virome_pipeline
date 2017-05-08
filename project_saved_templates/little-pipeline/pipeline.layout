@@ -7,22 +7,109 @@
             <state>incomplete</state>
             <name>init-db.default</name>
         </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
             <name>fasta_size_filter.default</name>
         </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
             <name>nt_fasta_check.default</name>
         </commandSet>
+
+        <commandSet type="parallel">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>ncbi-blastn-plus.univec</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>ncbi-blastn-plus.rna</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>tRNAscan-SE.default</name>
+            </commandSet>
+        </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
-            <name>sequence-prep.read</name>
+            <name>rRNA-scrub.default</name>
+        </commandSet>
+
+        <commandSet type="parallel">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence-prep.rna-clean</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>sequence-prep.rna</name>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="parallel">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.sequence_read</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.sequence_rna</name>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="parallel">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>clean_expand_btab.univec</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>blast-result-prep.univec</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.univec-blast</name>
+                </commandSet>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="parallel">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>clean_expand_btab.rna</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>blast-result-prep.rna</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.rna-blast</name>
+                </commandSet>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>tRNAscan-prep.default</name>
         </commandSet>
         <commandSet type="serial">
             <state>incomplete</state>
-            <name>db-upload.sequence_read</name>
+            <name>db-upload.trna</name>
         </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
             <name>metagene.default</name>

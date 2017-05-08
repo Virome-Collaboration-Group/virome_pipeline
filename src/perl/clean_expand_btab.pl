@@ -115,7 +115,7 @@ my $results =
             'input|i=s',
             'subjectDB|b=s',
             'output_dir|o=s',
-            'seqlookupdir|m=s',
+            'database|b=s',
             'log|l=s',
             'debug|d=s',
             'help|h' )
@@ -156,11 +156,15 @@ my @aclamearray  = ();
 my @seedarray    = ();
 my @phgseedarray = ();
 
-my %sequenceLookup;
-my $libraryId = 1;
+#### database connection
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
-if ($options{subjectDB} =~ /^uniref100p$|^metagenomes$/i) {
-	tie(%sequenceLookup, 'MLDBM', $options{seqlookupdir}."/sequence_".$libraryId.".ldb");
+my $sth = $dbh->prepare('SELECT id,name FROM sequence WHERE 1');
+$sth->execute;
+
+my %sequence_hash;
+while ( my $result = $sth->fetchrow_hashref() ) {
+	$sequence_hash{$result->{name}} = $result->{id};
 }
 
 while (<BTAB>) {
@@ -218,7 +222,7 @@ sub check_parameters {
 	my $options = shift;
 
 	#### make sure sample_file and output_dir were passed
-    my @required = qw(input output_dir subjectDB seqlookupdir);
+    my @required = qw(input output_dir subjectDB database);
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {
@@ -270,7 +274,7 @@ sub expand {
         ####split blast output.
         my @hsp = split(/\t/, $seqline);
         #my $sequenceId = $sequenceLookup{$hsp[0]};
-        my $sequenceId = "S1";
+        my $sequenceId = $sequence_hash{$hsp[0]};
 
         #### re-arrange all element as expected by sqlite blastp table
         #### resulting array look like
@@ -529,7 +533,7 @@ sub modifyDescription {
 
 	my @hsp = split(/\t/, $seqline);
 	#my $sequenceId = $sequenceLookup{$hsp[0]};
-    my $sequenceId = "S2";
+    my $sequenceId = $sequence_hash{$hsp[0]};
 	my $str = "";
 
     #### re-arrange all element as expected by sqlite blastp table

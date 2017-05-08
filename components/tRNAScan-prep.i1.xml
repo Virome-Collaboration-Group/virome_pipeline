@@ -6,7 +6,7 @@
         <!--Processing-->
         <command>
             <type>RunUnixCommand</type>
-            <name>tRNAScan-prep</name>
+            <name>tRNAscan-prep</name>
             <state>incomplete</state>
             <executable>$;TRNASCAN_PREP_EXEC$;</executable>
             <arg>-i $;I_FILE_PATH$; -od $;OUTPUT_DIRECTORY$;/$;ITERATOR_NAME$;/g$;GROUP_NUMBER$; -ll $;LIBRARY_LIST_FILE$; -ld $;LOOKUP_DIR$;</arg>
