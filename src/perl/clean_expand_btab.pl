@@ -101,7 +101,7 @@ use warnings;
 use Pod::Usage;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use UTILS_V;
-use MLDBM 'DB_File';
+use DBI;
 use Data::Dumper;
 use File::Basename;
 

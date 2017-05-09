@@ -329,8 +329,8 @@ $;SEQUENCE_PREP_EXEC$;=/opt/package_virome/bin/sequence-prep
 [component sequence_relationship-prep]
 $;SEQUENCE_RELATIONSHIP_PREP_EXEC$;=/opt/package_virome/bin/sequence_relationship-prep
 
-[component tRNAScan-prep]
-$;TRNASCAN_PREP_EXEC$;=/opt/package_virome/bin/tRNAScan-prep
+[component tRNAscan-prep]
+$;TRNASCAN_PREP_EXEC$;=/opt/package_virome/bin/tRNAscan-prep
 
 [component metagene-prep]
 $;METAGENE_PREP_EXEC$;=/opt/package_virome/bin/metagene-prep
@@ -382,7 +382,7 @@ $;BTABTRIM_EXEC$; = /opt/package_virome/bin/btabTrim
 
 ;;Anagha - custom components
 [component seq_length_check]
-$;SEQ_LENGTH_EXEC$; = /opt/package_virome/bin/seq_length_check.sh 
+$;SEQ_LENGTH_EXEC$; = /opt/package_virome/bin/seq_length_check.sh
 
 ;;Anagha - custom components
 [component nt_fasta_check]
@@ -429,10 +429,10 @@ $;LIBRARY_HISTOGRAM$; = /opt/package_virome/bin/libraryHistogram
 $;QC_FILTER$; = /opt/package_virome/bin/QC_filter
 
 [component btabTrimMGOL]
-$;BTABTRIMMGOL_EXEC$; = /opt/package_virome/bin/btabTrimMGOL 
+$;BTABTRIMMGOL_EXEC$; = /opt/package_virome/bin/btabTrimMGOL
 
 [component blast2btab]
-$;BLAST2BTAB_EXEC$; = /opt/package_virome/bin/wu-blast2btab 
+$;BLAST2BTAB_EXEC$; = /opt/package_virome/bin/wu-blast2btab
 
 [component viromeorf-prep]
 $;VIROMEORF_PREP_EXEC$; = /opt/package_virome/bin/viromeorf-prep
@@ -507,4 +507,3 @@ $;IMPORT_LIBRARY_FROM_ARCHIVE$;=/opt/package_virome/bin/import_library_from_arch
 ;;Khaleel - Custom Components
 [component kmer_freq]
 $;UPDATE_QUALITY_SCORES$;=/opt/package_virome/bin/kmer_freq
-
