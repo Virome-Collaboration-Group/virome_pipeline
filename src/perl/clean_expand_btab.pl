@@ -113,7 +113,7 @@ my %options = ();
 my $results =
   GetOptions( \%options,
             'input|i=s',
-            'subjectDB|b=s',
+            'subjectDB|s=s',
             'output_dir|o=s',
             'database|b=s',
             'log|l=s',
