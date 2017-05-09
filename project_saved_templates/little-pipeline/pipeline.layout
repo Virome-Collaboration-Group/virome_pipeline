@@ -32,6 +32,10 @@
                 <state>incomplete</state>
                 <name>tRNAscan-SE.default</name>
             </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>metagene.default</name>
+            </commandSet>
         </commandSet>
 
         <commandSet type="serial">
@@ -51,16 +55,13 @@
             </commandSet>
         </commandSet>
 
-        <commandSet type="parallel">
+        <commandSet type="serial">
             <state>incomplete</state>
-            <commandSet type="serial">
-                <state>incomplete</state>
-                <name>db-upload.sequence_read</name>
-            </commandSet>
-            <commandSet type="serial">
-                <state>incomplete</state>
-                <name>db-upload.sequence_rna</name>
-            </commandSet>
+            <name>db-upload.sequence_read</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>db-upload.sequence_rna</name>
         </commandSet>
 
         <commandSet type="parallel">
@@ -80,10 +81,7 @@
                     <name>db-upload.univec-blast</name>
                 </commandSet>
             </commandSet>
-        </commandSet>
 
-        <commandSet type="parallel">
-            <state>incomplete</state>
             <commandSet type="serial">
                 <state>incomplete</state>
                 <commandSet type="serial">
@@ -99,41 +97,44 @@
                     <name>db-upload.rna-blast</name>
                 </commandSet>
             </commandSet>
+
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>tRNAscan-prep.default</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.trna</name>
+                </commandSet>
+            </commandSet>
+
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>mga2seq_pep.default</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>sequence-prep.orf_pep</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.orf_pep</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>sequence-prep.orf_nuc</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.orf_nuc</name>
+                </commandSet>
+            </commandSet>
         </commandSet>
 
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>tRNAscan-prep.default</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>db-upload.trna</name>
-        </commandSet>
-
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>metagene.default</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>mga2seq_pep.default</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>sequence-prep.orf_pep</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>db-upload.orf_pep</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>sequence-prep.orf_nuc</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>db-upload.orf_nuc</name>
-        </commandSet>
         <commandSet type="serial">
             <state>incomplete</state>
             <name>db-to-lookup.sequence</name>
@@ -157,30 +158,41 @@
             <name>rubble.mgol</name>
         </commandSet>
 
-        <commandSet type="serial">
+        <commandSet type="parallel">
             <state>incomplete</state>
-            <name>clean_expand_btab.uniref</name>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>clean_expand_btab.uniref</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>blast-result-prep.uniref</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.blastp_uniref</name>
+                </commandSet>
+            </commandSet>
+
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>clean_expand_btab.mgol</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>blast-result-prep.mgol</name>
+                </commandSet>
+                <commandSet type="serial">
+                    <state>incomplete</state>
+                    <name>db-upload.blastp_mgol</name>
+                </commandSet>
+            </commandSet>
         </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>blast-result-prep.uniref</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>db-upload.blastp_uniref</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>clean_expand_btab.mgol</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>blast-result-prep.mgol</name>
-        </commandSet>
-        <commandSet type="serial">
-            <state>incomplete</state>
-            <name>db-upload.blastp_mgol</name>
-        </commandSet>
+
         <commandSet type="serial">
             <state>incomplete</state>
             <name>gen_lib_stats.default</name>
