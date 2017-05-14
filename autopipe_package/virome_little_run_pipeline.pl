@@ -75,6 +75,7 @@ area (repository root) and then execute it.
 use strict;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
+use Data::Dumper;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
@@ -149,7 +150,6 @@ $rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
 $rubble_config->RewriteConfig();
 
 ## Get ready to rumble . . .
-
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
 
 # The 'block' term is used to make the pipeline invocation synchronous, so that
@@ -158,6 +158,30 @@ my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
 my $success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
                            block       => 1
                          );
+if (! $success) {
+    print STDERR "Problem running pipeline id: with input: $options{'fasta'}\n\n";
+    print STDERR "$pipeline->{'diagnostics'}->{'complete_components'} of ";
+    print STDERR "$pipeline->{'diagnostics'}->{'total_components'} completed\n";
+    print STDERR "\n";
+
+    print STDERR "ERROR running component(s): \n";
+    foreach my $c (@{$pipeline->{'diagnostics'}->{'components'}}) {
+        print STDERR "\t$c\n";
+    }
+
+    print STDERR "ERROR message:\n";
+
+    my $f = $pipeline->{'diagnostics'}->{'stderr_files'};
+    chomp $f;
+    chomp $f;
+    open(FHD, "<", $f) or die "Could not open file $f\n$!";
+    while(<FHD>) {
+        print STDERR "\t$_";
+    }
+    print STDERR "\n";
+}
+
+#print Dumper(\$pipeline->{'diagnostics'});
 
 ## Determine the exit value based on the success of the pipeline.
 my $exit_value = ($success) ? 0 : 1;

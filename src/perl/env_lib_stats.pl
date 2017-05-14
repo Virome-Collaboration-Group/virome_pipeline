@@ -413,11 +413,11 @@ sub bestEvalue {
 	{
 		my $blast = $dbh->prepare(qq{SELECT m.$field as field, m.lib_prefix, min(b.e_value) as eval, m.lib_shortname
                                    FROM blastp b
-                                   	INNER JOIN
-                                   		mgol_library m on LEFT(b.hit_name,3)=m.lib_prefix
+                                   INNER JOIN
+                                   		mgol_library m on substr(b.hit_name,1,3)=m.lib_prefix
                                    WHERE b.sequenceId = $sequenceId
                                    	and b.database_name='METAGENOMES'
-                                    and LEFT(hit_name,3) not like LEFT('$query_name',3)
+                                    and substr(hit_name,1,3) not like substr('$query_name',1,3)
                                     and b.e_value <= 0.001
                                    GROUP BY field, m.lib_prefix
                                    ORDER BY e_value}

@@ -1,9 +1,5 @@
 #!/usr/bin/perl -w
 
-eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
-    if 0; # not running under some shell
-BEGIN{foreach (@INC) {s/\/usr\/local\/packages/\/local\/platform/}};
-
 =head1 NAME
 
 mga2seq_pep.pl - convert metagene raw output to fasta nucliotide and peptide file
@@ -12,9 +8,9 @@ mga2seq_pep.pl - convert metagene raw output to fasta nucliotide and peptide fil
 
 USAGE: mga2seq_pep.pl
             --input=/path/to/fasta
-	    --mga=/path/to/mga/output
-	    --prefix
-	    --outdir
+            --mga=/path/to/mga/output
+    	    --prefix
+    	    --outdir
           [ --log=/path/to/logfile
             --debug=N
           ]
@@ -38,27 +34,37 @@ B<--help,-h>
 
 =head1  DESCRIPTION
 
-This script is used to convert metagene output to nucleotide and peptide seq file.
+    This script is used to convert metagene output to nucleotide and peptide seq file.
 
 =head1  INPUT
 
-The input to this is defined using the --input/-i or mga/-m.  This should point
-to the fasta file containing sequence(s), and metagene output file
+    The input to this is defined using the --input/-i or mga/-m.  This should point
+    to the fasta file containing sequence(s), and metagene output file
 
-=head1  CONTACT
+=head1 AUTHOR
 
-    Jaysheel D. Bhavsar
-    bjaysheel@gmail.com
+    Written by Daniel Nasko,
+    Center for Bioinformatics and Computational Biology, University of Delaware.
+
+=head1 COPYRIGHT
+
+    Copyright 2017 Daniel Nasko.
+    License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+    This is free software: you are free to change and redistribute it.
+    There is NO WARRANTY, to the extent permitted by law.
+
+    Please acknowledge author and affiliation in published work arising from this script's
+    usage <http://bioinformatics.udel.edu/Core/Acknowledge>.
 
 =cut
 
 use strict;
-use TIGR::FASTAiterator;
-use TIGR::Foundation;
-use TIGR::FASTArecord;
-use BeginPerlBioinfo;
+use warnings;
+use Data::Dumper;
+use File::Basename;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
+
 BEGIN {
 	use Ergatis::Logger;
 }
@@ -73,42 +79,54 @@ my $results = GetOptions (\%options,
                           'debug|d=s',
                           'help|h') || pod2usage();
 
+#### display documentation
+if( $options{'help'} ){
+    pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
+}
+
+##############################################################################
+#### make sure everything passed was peachy
+&check_parameters(\%options);
+
 my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
 my $logger = new Ergatis::Logger('LOG_FILE'=>$logfile,
                                   'LOG_LEVEL'=>$options{'debug'});
 $logger = $logger->get_logger();
 
-## display documentation
-if( $options{'help'} ){
-    pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
+my %Fasta;
+my ($h,$s,$l) = ("","",0);
+my %Model = (
+    'a' => 'archaea',
+    'p' => 'phage',
+    'b' => 'bacteria',
+    's' => 'self');
+my %Codon;
+my $nseqs=0;
+LoadCodonTable();
+
+open(IN, "<", $options{input}) || die "\n\n Cannot open the input file: $options{input}\n\n";
+while(<IN>) {
+    chomp;
+    if ($_ =~ m/^>/) {
+	unless ($l == 0) {
+	    $s = uc($s);
+	    $Fasta{$h} = $s;
+	    $s = "";
+	}
+	$h = $_;
+	$h =~ s/^>//;
+	$h =~ s/ .*//;
+    }
+    else {
+	$s = $s . $_;
+    }
+    $l++;
 }
+close(IN);
+$s = uc($s);
+$Fasta{$h} = $s;
 
-## make sure everything passed was peachy
-&check_parameters(\%options);
-
-#from TIGR (Jacques Ravel)
-#
-# REVISION HISTORY
-# 6/18/08   - fixed bug with sequence header not matching metagene output - S. Polson
-# 1/5/2009  - fixed bug with long sequence headers - S. Polson
-# 1/15/2009 - modified to accept metagene annotator output - S. Dhankar
-# 2/3/2009  - additonal output was added on the fasta line for clustering - S Polson
-# 4/9/2009  - fixed issue with negative strand nucleotide orf outputs not being rev. comp. - S Polson
-# 4/9/2009  - fixed issue with alternate start codons being translated incorrectly - S. Polson
-# 4/27/2009 - ergatis component - J. D. Bhavsar
-# 4/4/2011  - fixed issue with single-digit ergatis split input files
-
-my ($read, $pep, $gc, $domain, $info, $tag, $sub_seq, $sub_prot, $ln, $ln2, $tag2);
-my %h_info;
-my %h_prot;
-my $i=0;
-my $mark=0;
-my ($rbs, $pairing, $model, @tp, $line);
-
-open(NOPREDICT, ">".$options{outdir}."/".$options{prefix}.".no_prediction.list") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.no_prediction.list");
-open(SEQ, ">".$options{outdir}."/".$options{prefix}.".seq") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.seq");
-open(PROT, ">".$options{outdir}."/".$options{prefix}.".pep") or $logger->logdie("Could not open file $options{outdir}/$options{prefix}.pep");
-
+#### get metagene output file based on prefix
 my $file = `egrep "$options{prefix}\\." $options{mga}`;   # modified 4/4/11 SWP
 
 unless (length($file)){
@@ -116,175 +134,149 @@ unless (length($file)){
     exit(1);
 }
 
-open(META, $file);
-my @metagene = <META>;
-close(META);
+# NODE_1_length_56803_cov_57.912_g0_i0_420_4775_1 size=1452 gc=0.302607 start=420 stop=4775 strand=+ frame=0 model=self score=844.516 type=complete caller=MetaGENE
 
-foreach $line (@metagene) {
-	if ($line =~ /^\#\s(\S+)/ && $line !~ /^\#\sself\:/ && $line !~ /^\#\sgc\s\=/) {
-		$read = $1;
-		$metagene[$i+1] =~ /^\#\sgc\s=\s(0\.\d+)\,\srbs\s=\s(\S+)$/;
-		#print $metagene[$i+1]."\n";
-		$gc=$1;
-		$rbs=$2;
-		($domain) = ($metagene[$i+2] =~ /^\# self\: (\S+)/);
+open(PEP, ">" , "$options{outdir}/$prefix.pep") || $logger->logdie("Cannot write to: $options{outdir}/$prefix.pep");
+open(NUC, ">", "$options{outdir}/$prefix.nuc") || $logger->logdie("Cannot write to: $options{outdir}/$prefix.nuc");
 
-		if($domain eq "a") {
-			$domain = "archaea";
-		} elsif($domain eq "p") {
-			$domain ="phage";
-		} elsif($domain eq "b") {
-			$domain = "bacteria";
-		} elsif($domain eq "s") {
-			$domain = "self";
-		}
+open(IN, "<", $file) || $logger->logdie("Cannot open the mga file: $file");
+while(<IN>) {
+    chomp;
+    if ($_ =~ m/^gene/) {
+    	my @a = split(/\t/, $_);
+    	my $gid = get_gid($a[0]);
 
-		if ($metagene[$i+3] && $metagene[$i+3] =~ /^gene/) {
-			$h_info{$read} = "gc=$gc";
-			#$h_info{$read} = "readGC=$gc readRBSpct=$rbs readModel=$domain";
-		} else {
-			print NOPREDICT "$read\n";
-		}
-	} elsif ($line =~ /^gene/) {
-		chomp $line;
-		@tp = split(/\s+/, $line);
+        if (exists $Fasta{$h}) {
+    	    my $nt_orf_seq = get_nt_orf($Fasta{$h}, $a[1], $a[2], $a[3], $a[4]);
+    	    if ($a[3] eq "-") { my $tmp=$a[1]; $a[1]=$a[2];$a[2]=$tmp; }
+    	    print NUC ">" . $h . "_" . $a[1] . "_" . $a[2] . "_" . $gid . " size=" . length($nt_orf_seq) . " gc=" . gc($nt_orf_seq) . " start=$a[1]" . " stop=$a[2]" . " strand=$a[3]" . " frame=$a[4]" . " model=" . $Model{$a[7]} . " score=$a[6]" . " type=" . get_type($a[5]) . " caller=MetaGENE" . "\n";
+    	    print NUC $nt_orf_seq . "\n";
 
-		if($tp[7] eq "a"){
-		  $model = "archaea";
-		} elsif($tp[7] eq "p"){
-		  $model ="phage";
-		} elsif($tp[7] eq "b"){
-		  $model = "bacteria";
-		} elsif($tp[7] eq "s"){
-		  $model = "self";
-		}
-
-		my $type = "";
-		if ($tp[5] =~ /00/) {
-			$type="incomplete";
-		} elsif ($tp[5] =~ /10/) {
-			$type = "lack_stop";
-		} elsif ($tp[5] =~ /01/){
-			$type = "lack_start";
-		} elsif ($tp[5] =~ /11/){
-			$type = "complete";
-		}
-
-		# edited: May 18th 2012
-		# update sequence description
-		# Jaysheel D. Bhavsar
-		if($tp[3] eq "+"){
-			push (@{$h_prot{$read}}, "start=$tp[1]\tstop=$tp[2]\tstrand=$tp[3]\tframe=$tp[4]\tmodel=$model\tscore=$tp[6]\ttype=$type\tcaller=MetaGENE\n");
-			#push (@{$h_prot{$read}}, "start=$tp[1]\tstop=$tp[2]\tstrand=$tp[3]\tframe=$tp[4]\tmodel=$model\tends=$tp[5]\tORFscore=$tp[6]\tRBSstart=$tp[8]\tRBSstop=$tp[9]\tRBSscore=$tp[10]\n");
-		} elsif($tp[3] eq "-"){
-			push (@{$h_prot{$read}}, "start=$tp[2]\tstop=$tp[1]\tstrand=$tp[3]\tframe=$tp[4]\tmodel=$model\tscore=$tp[6]\ttype=$type\tcaller=MetaGENE\n");
-			#push (@{$h_prot{$read}}, "start=$tp[2]\tstop=$tp[1]\tstrand=$tp[3]\tframe=$tp[4]\tmodel=$model\tends=$tp[5]\tORFscore=$tp[6]\tRBSstart=$tp[8]\tRBSstop=$tp[9]\tRBSscore=$tp[10]\n");
-		}
-	}
-	$i++;
+    	    print PEP ">" . $h . "_" . $a[1] . "_" . $a[2] . "_" . $gid . " size=" . orf_len($nt_orf_seq) . " gc=" . gc($nt_orf_seq) . " start=$a[1]" . " stop=$a[2]" . " strand=$a[3]" . " frame=$a[4]" . " model=" . $Model{$a[7]} . " score=$a[6]" . " type=" . get_type($a[5]) . " caller=MetaGENE" . "\n";
+    	    my $translated_seq = translate($nt_orf_seq);
+    	    if ($a[5] =~ m/^1/) {$translated_seq =~ s/^./M/;} ## This seems weird, but isnt. MetaGene allows for alternative start codons when predicting ORFs, funny thing about alternative start codons is, even if they are supposed to encode some other peptide the tRNA will always put a Met there.
+    	    print PEP $translated_seq . "\n";
+    	    $nseqs++;
+	    } else {
+            $logger->logdie("Error! Cannot find the sequence: $h");
+        }
+    } elsif ($_ =~ m/^#/) {
+        unless ($_ =~ m/^# gc = / || $_ =~ m/^# self: /) {
+            $h = $_;
+            $h =~ s/^# //;
+            $h =~ s/ .*//;
+        }
+    }
 }
+close(IN);
+close(PEP);
+close(NUC);
 
-my $tf = new TIGR::Foundation;
+if ($nseqs == 0) { die "\n Error: There were no ORFs predicted from your input files\n FASTA file: $fasta\n MGA file: $mga\n\n"; }
 
-if (!defined $tf){
-    $logger->logdie("Bad foundation\n");
-}
-
-my @errors;
-my $cmd = "awk NF $options{input} > $options{outdir}/tmp.seq.fsa";
-system($cmd);
-$cmd = "cp ".$options{outdir}."/tmp.seq.fsa $options{input}";
-system($cmd);
-my $fr = new TIGR::FASTAiterator($tf, \@errors, "$options{input}");
-
-if (!defined $fr){
-	$logger->logdie("Bad reader\n");
-}
-
-my $none;
-my $success;
-while ($fr->hasNext){
-    my $rec = $fr->next();
-
-    # eliminate empty line error.
-    #if (defined $rec){
-	my $id = $rec->getIdentifier();
-	my $body = $rec->getData();
-
-	my $z = 1;
-	if (!defined $h_prot{$id}){
-	    #print "$id: NO ORFS FOUND\n";
-	    $none++;
-	    #next;
-	} else {
-
-		foreach my $line (@{$h_prot{$id}}) {
-			chomp $line;
-
-			my @att = split ("\t", $line);
-			my $h;
-			for($h=0; $h<6; $h++) {
-				($att[$h])=($att[$h]=~/^\S+\=(\S+)$/);
-			}
-			$line =~ s/\t/ /g;
-			#$line =~ s/\'/\-prime/g;
-
-			if ($att[2] eq "+") {
-				$sub_seq = quickcut ($body, ($att[0]+$att[3]), $att[1]);
-			} elsif ($att[2] eq "-") {
-				$sub_seq = quickcut ($body, $att[1], ($att[0]-$att[3]));
-			}
-
-			$ln = length($sub_seq);
-			$tag = $id . "_$att[0]_$att[1]_$z" . " size=$ln " . $h_info{$id}. " " . $line;
-
-			$success++;
-			if ($att[2] eq "+") {
-				printFastaSequence(\*SEQ, $tag, $sub_seq);
-				$sub_prot = dna2peptide2($sub_seq);
-				$ln2 = length($sub_prot);
-				$tag2 = $id . "_$att[0]_$att[1]_$z" . " size=$ln2 " . $h_info{$id}. " ". $line;
-				printFastaSequence(\*PROT, $tag2, $sub_prot);
-			} elsif ($att[2] eq "-") {
-				printFastaSequence(\*SEQ, $tag, revcom($sub_seq));
-				$sub_prot = dna2peptide2(revcom($sub_seq));
-
-				if ($att[5] =~ /^1/){
-					$sub_prot =~ s/^./M/
-				}
-
-				$ln2 = length($sub_prot);
-				$tag2 = $id . "_$att[0]_$att[1]_$z" . " size=$ln2 " . $h_info{$id}. " ". $line;
-				printFastaSequence(\*PROT, $tag2, $sub_prot);
-			}
-			$z++;
-		}
-	}
-    #}
-}
-
-exit(0);
-
-sub printFastaSequence
+##############################################################################
+sub translate
 {
-    my($file) = $_[0];
-    my($header) = $_[1];
-    my($seqs) = $_[2];
-    print $file ">$header\n";
-    printSEQ($file, $seqs);
+    my $str = $_[0];
+    my $peptide = "";
+    for (my $i=0; $i<length($str)-2; $i+=3) {
+    	my $mer = substr $str, $i, 3;
+    	if (exists $Codon{$mer}) {
+            $peptide = $peptide . $Codon{$mer};
+        } else {
+            $peptide = $peptide . 'X';
+        }
+    }
 
-} # printFastaSequence
+    return $peptide;
+}
 
-sub printSEQ
+##############################################################################
+sub LoadCodonTable
+{   # Load the AA codon table from __END__ of program.
+    my @data = <DATA>;
+    foreach my $line (@data) {
+        chomp($line);
+	    my @codons = split(/ /,$line);
+	    my $AA = shift(@codons);
+	    foreach my $nnn (@codons) {
+            $nnn =~ s/U/T/g;
+		    $Codon{$nnn} = $AA;
+	    }
+    }
+}
+
+##############################################################################
+sub revcomp
 {
-	my $file = shift;
-	my $seqs = shift;
+    my $str = $_[0];
+    $str = scalar reverse $str;
+    $str =~ tr/ATGC/TACG/;
+    return $str;
+}
 
-	for (my $j = 0; $j < length($seqs); $j += 80) {
-		print $file substr($seqs, $j, 80), "\n";
-	}
-} # printSEQ
+##############################################################################
+sub get_type {
+    my $str = $_[0];
 
+    if ($str eq "11") {
+        return "complete";
+    }
+    elsif ($str eq "10") {
+        return "lack_stop";
+    }
+    elsif ($str eq "01") {
+        return "lack_start";
+    }
+    elsif ($str eq "00") {
+        return "incomplete";
+    }
+}
+
+##############################################################################
+sub gc {
+    my $str = $_[0];
+    my $gcs = $str =~ tr/GCgc/GCGC/;
+    my $gc_content = $gcs / length($str);
+    return $gc_content;
+}
+
+##############################################################################
+sub orf_len {
+    my $str = $_[0];
+    my $len = length($str)/3;
+    return $len;
+}
+
+##############################################################################
+sub get_nt_orf {
+    my $seq = $_[0];
+    my $start = $_[1];
+    my $stop = $_[2];
+    my $sense = $_[3];
+    my $frame = $_[4];
+
+    my $length = $stop - $start + 1;
+    $start--;
+
+    my $orf = substr $seq, $start, $length;
+
+    if ($sense eq "-") {
+        $orf = revcomp($orf);
+    }
+    $orf = substr $orf, $frame;
+
+    return $orf;
+}
+
+##############################################################################
+sub get_gid {
+    my $str = $_[0];
+    $str =~ s/gene_//;
+    return $str;
+}
+
+##############################################################################
 sub check_parameters {
     #### make sure sample_file and output_dir were passed
     my @required = qw(input mga outdir);
@@ -295,14 +287,27 @@ sub check_parameters {
 		    $logger->logdie("No input defined, plesae read perldoc $0\n\n");
         }
 	}
-
-    ## at least one input type is required
-    unless ( $options{input} && $options{mga} && $options{prefix} && $options{outdir}) {
-		$logger->logdie("Missing input, plesae read perldoc $0\n\n");
-		exit(1);
-    }
-
-	if(0){
-		pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
-	}
 }
+
+__END__
+A GCT GCC GCA GCG
+R CGT CGC CGA CGG AGA AGG
+N AAT AAC
+D GAT GAC
+C TGT TGC
+Q CAA CAG
+E GAA GAG
+G GGT GGC GGA GGG
+H CAT CAC
+I ATT ATC ATA
+L TTA TTG CTT CTC CTA CTG
+K AAA AAG
+M ATG
+F TTT TTC
+P CCT CCC CCA CCG
+S TCT TCC TCA TCG AGT AGC
+T ACT ACC ACA ACG
+W TGG
+Y TAT TAC
+V GTT GTC GTA GTG
+* TAA TAG TGA

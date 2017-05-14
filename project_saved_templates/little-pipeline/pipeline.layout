@@ -36,6 +36,10 @@
                 <state>incomplete</state>
                 <name>metagene.default</name>
             </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>mga2seq_pep.default</name>
+            </commandSet>
         </commandSet>
 
         <commandSet type="serial">
@@ -112,10 +116,6 @@
 
             <commandSet type="serial">
                 <state>incomplete</state>
-                <commandSet type="serial">
-                    <state>incomplete</state>
-                    <name>mga2seq_pep.default</name>
-                </commandSet>
                 <commandSet type="serial">
                     <state>incomplete</state>
                     <name>sequence-prep.orf_pep</name>

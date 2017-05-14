@@ -28,15 +28,15 @@
             <name>create seq list</name>
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/create_list_file</executable>
-            <param>  
+            <param>
                 <key>--directory</key>
                 <value>$;OUTPUT_DIRECTORY$;</value>
             </param>
-            <param>  
+            <param>
                 <key>--regex</key>
-                <value>".*\.seq"</value>
+                <value>".*\.nuc"</value>
             </param>
-            <param>  
+            <param>
                 <key>--output_list</key>
                 <value>$;SEQ_OUTPUT_LIST$;</value>
             </param>
@@ -46,15 +46,15 @@
             <name>create pep list</name>
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/create_list_file</executable>
-            <param>  
+            <param>
                 <key>--directory</key>
                 <value>$;OUTPUT_DIRECTORY$;</value>
             </param>
-            <param>  
+            <param>
                 <key>--regex</key>
                 <value>".*\.pep"</value>
             </param>
-            <param>  
+            <param>
                 <key>--output_list</key>
                 <value>$;PEP_OUTPUT_LIST$;</value>
             </param>
