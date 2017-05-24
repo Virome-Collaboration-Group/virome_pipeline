@@ -115,6 +115,12 @@ if (defined $options{log}) {
 ## important bits here
 ##############################
 my $fasta = $options{'fasta'};
+my $cmd = "";
+
+my $filename = fileparse($fasta, qr/\.[^.]*/);
+my $output_dir = "/opt/output/". $filename ."_". timestamp();
+
+&create_output_dir($output_dir);
 
 my $template = Ergatis::SavedPipeline->new(
                template => "$options{template_directory}/pipeline.layout");
@@ -125,6 +131,12 @@ my $pipeline = $template->write_pipeline( repository_root => $options{repository
 ## here you can use Ergatis::ConfigFiles to edit some of the newly-written
 ##  component configurations before pipeline execution.  One example is shown.
 ##  naming and path conventions allow you to know where the component file is
+
+## set output dir for init-db
+my $init_db_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/init-db/" . $pipeline->id . "_default/init-db.default.user.config");
+$init_db_config->setval('output', '$;OUTPUT_DIRECTORY;', $output_dir );
+$init_db_config->RewriteConfig();
 
 ## $fasta_size_filter
 my $fasta_size_filter_config = new Ergatis::ConfigFile(
@@ -159,26 +171,40 @@ my $success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
                            block       => 1
                          );
 if (! $success) {
-    print STDERR "Problem running pipeline id: with input: $options{'fasta'}\n\n";
-    print STDERR "$pipeline->{'diagnostics'}->{'complete_components'} of ";
-    print STDERR "$pipeline->{'diagnostics'}->{'total_components'} completed\n";
-    print STDERR "\n";
+    my $stderr = "Problem running pipeline id:$pipeline->{'id'} with input: $options{'fasta'}\n\n";
+    $stderr .= "$pipeline->{'diagnostics'}->{'complete_components'} of ";
+    $stderr .= "$pipeline->{'diagnostics'}->{'total_components'} completed\n";
+    $stderr .= "\n";
 
-    print STDERR "ERROR running component(s): \n";
+    $stderr .= "ERROR running component(s): \n";
     foreach my $c (@{$pipeline->{'diagnostics'}->{'components'}}) {
-        print STDERR "\t$c\n";
+        my $t = $c;
+        $t ~= s/\.default$//;
+
+        $stderr .= "\t$c\n";
+
+        foreach my $t (@{$pipeline->{'diagnostics'}->{'command_info'}->{$c}}) {
+            my $c = $$t[0];
+            my $f = $$t[1];
+
+            open(FHD, "<", $f) or die "Could not open file $f\n$!";
+            while(<FHD>) {
+                $stderr .= "\t\t$_";
+            }
+            $stderr .= "\n";
+        }
     }
 
-    print STDERR "ERROR message:\n";
+    print STDERR $stderr;
 
-    my $f = $pipeline->{'diagnostics'}->{'stderr_files'};
-    chomp $f;
-    chomp $f;
-    open(FHD, "<", $f) or die "Could not open file $f\n$!";
-    while(<FHD>) {
-        print STDERR "\t$_";
-    }
-    print STDERR "\n";
+    $cmd = "scp /opt/projects/virome/workflow/runtime/pipeline/$pipeline->{'id'}/pipeline.xml.log";
+    $cmd .= " /opt/output/$output_dir/logs/.";
+    system("$cmd");
+
+    open(OUT, ">", "/opt/output/$output_dir/logs/$pipeline->{'id'}.stderr") or
+        die "Could not open file to write error log /opt/output/$output_dir/logs/$pipeline->{'id'}.stderr\n";
+    print OUT $stderr;
+    close(OUT);
 }
 
 #print Dumper(\$pipeline->{'diagnostics'});
@@ -188,16 +214,14 @@ my $exit_value = ($success) ? 0 : 1;
 
 exit $exit_value;
 
-##############################
-##############################
-
+###############################################################################
 sub _log {
     my $msg = shift;
 
     print $logfh "$msg\n" if $logfh;
 }
 
-
+###############################################################################
 sub check_parameters {
     my $options = shift;
 
@@ -208,4 +232,12 @@ sub check_parameters {
             die "--$option is a required option";
         }
     }
+}
+###############################################################################
+sub create_output_dir {
+    my $dir = shift;
+
+    my $cmd = "mkdir -p $dir/logs";
+
+    system("$cmd");
 }

@@ -136,8 +136,8 @@ unless (length($file)){
 
 # NODE_1_length_56803_cov_57.912_g0_i0_420_4775_1 size=1452 gc=0.302607 start=420 stop=4775 strand=+ frame=0 model=self score=844.516 type=complete caller=MetaGENE
 
-open(PEP, ">" , "$options{outdir}/$prefix.pep") || $logger->logdie("Cannot write to: $options{outdir}/$prefix.pep");
-open(NUC, ">", "$options{outdir}/$prefix.nuc") || $logger->logdie("Cannot write to: $options{outdir}/$prefix.nuc");
+open(PEP, ">" , "$options{outdir}/$options{prefix}.pep") || $logger->logdie("Cannot write to: $options{outdir}/$options{prefix}.pep");
+open(NUC, ">", "$options{outdir}/$options{prefix}.nuc") || $logger->logdie("Cannot write to: $options{outdir}/$options{prefix}.nuc");
 
 open(IN, "<", $file) || $logger->logdie("Cannot open the mga file: $file");
 while(<IN>) {
@@ -172,7 +172,7 @@ close(IN);
 close(PEP);
 close(NUC);
 
-if ($nseqs == 0) { die "\n Error: There were no ORFs predicted from your input files\n FASTA file: $fasta\n MGA file: $mga\n\n"; }
+if ($nseqs == 0) { die "\n Error: There were no ORFs predicted from your input files\n FASTA file: $options{input}\n MGA file: $file\n\n"; }
 
 ##############################################################################
 sub translate
