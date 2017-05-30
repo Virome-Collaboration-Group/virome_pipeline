@@ -178,7 +178,8 @@ $mgol_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $option
 $mgol_rubble_config->RewriteConfig();
 
 #### point to PERSISTENT_STORAGE sqlite3 file
-foreach my $token ("mgol", "rna", "uniref", "univec") {
+my @array = qw(mgol rna uniref univec);
+foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
@@ -186,7 +187,7 @@ foreach my $token ("mgol", "rna", "uniref", "univec") {
 }
 
 #### clean_expand_btab sqlite3 file location
-foreach my $token ("mgol", "rna", "uniref", "univec") {
+foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/clean_expand_btab/" . $pipeline->id . "_${token}/clean_expand_btab.${token}.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
@@ -194,7 +195,9 @@ foreach my $token ("mgol", "rna", "uniref", "univec") {
 }
 
 #### stats script sqlite3 file location
-foreach my $component ("env_lib_stats" "fxnal_bin_all_db" "fxnal_bin_per_db" "gen_lib_stats" "libraryHistogram" "orfan" "sequence_classification" "taxonomy_binning") {
+undef @array;
+@array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning)
+foreach my $component (@array) {
     my $stats_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
     $stats_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
@@ -202,7 +205,9 @@ foreach my $component ("env_lib_stats" "fxnal_bin_all_db" "fxnal_bin_per_db" "ge
 }
 
 #### db_upload script sqlite3 file location
-foreach my $token ("blastp_mgol", "blastp_uniref", "orf_nuc", "orf_pep" "orfan" "rna-blast" "sequence_read" "sequence_relationship" "sequence_rna" "trna" "univec-blast") {
+undef @array;
+@array = qw(blastp_mgol blastp_uniref orf_nuc orf_pep orfan rna-blast sequence_read sequence_relationship sequence_rna trna univec-blast)
+foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_${token}/db-upload.${token}.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
@@ -210,7 +215,9 @@ foreach my $token ("blastp_mgol", "blastp_uniref", "orf_nuc", "orf_pep" "orfan" 
 }
 
 #### sequence-prep sqlite3 file location
-foreach my $token ("orf_pep", "orf_nuc", "rna-clean", "rna") {
+undef @array;
+@array = qw(orf_pep orf_nuc rna-clean rna)
+foreach my $token (@array) {
     $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_${token}/sequence-prep.${token}.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
@@ -218,7 +225,9 @@ foreach my $token ("orf_pep", "orf_nuc", "rna-clean", "rna") {
 }
 
 #### database dump sqlite3 location
-foreach my $token ("dump_db", "tRNAscan-prep") {
+undef @array;
+@array = qw(dump_db tRNAscan-prep)
+foreach my $token () {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
