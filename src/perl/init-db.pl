@@ -62,6 +62,7 @@ BEGIN {
 my %options = ();
 my $results = GetOptions (\%options,
 						  'outdir|o=s',
+                          'pstore|p=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -82,7 +83,7 @@ if( $options{'help'} ){
 ###############################################################################
 
 ## Init the SQLite database file
-my $dbh = DBI->connect("dbi:SQLite:dbname=$options{outdir}/processing.sqlite3", "", "", { RaiseError => 1}) or die $DBI::errstr;
+my $dbh = DBI->connect("dbi:SQLite:dbname=$options{pstore}/processing.sqlite3", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
 $dbh->do( "CREATE TABLE `blastp` (
   `id` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -369,25 +370,13 @@ $dbh->do( "CREATE TABLE `mgol_library` (
 	`deleted` tinyint(1)
 );");
 
-#open(OUT, ">", $this->{output_dir}."/mgol.sql") or $logger->logdie("Could not open file to write $this->{output_dir}/mgol.sql");
-#print OUT ".separator \"\\t\"\n";
-#print OUT ".import /archive/cbcbcore/packages/savior/references/lookup/tables/mgol_table.tab mgol_library";
-
-#close(OUT);
-
-#$cmd = "$config->{ToolInfo}->{sqlite}->{value}/sqlite3";
-#$cmd .= " $this->{scratch}/$config->{ToolInfo}->{database_name}->{value}";
-#$cmd .= " < $this->{output_dir}/mgol.sql";
-
-#execute_cmd($cmd);
-
 $logger->info("init database for complete");
 exit(0);
 
 ###############################################################################
 sub check_parameters {
     #### make sure sample_file and output_dir were passed
-    my @required = qw(outdir);
+    my @required = qw(outdir pstore);
 
 	foreach my $key (@required) {
 		unless ($options{$key}) {

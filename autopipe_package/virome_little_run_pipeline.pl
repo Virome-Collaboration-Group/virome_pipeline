@@ -76,8 +76,10 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use Data::Dumper;
-
+use File::Basename;
 use FindBin;
+use File::Path;
+use JSON qw(encode_json decode_json);
 use lib "$FindBin::Bin/../lib";
 use lib ("/var/www/html/cgi") ;
 
@@ -122,6 +124,8 @@ my $output_dir = "/opt/output/". $filename ."_". timestamp();
 
 &create_output_dir($output_dir);
 
+my $version_info = parse_version_info();
+
 my $template = Ergatis::SavedPipeline->new(
                template => "$options{template_directory}/pipeline.layout");
 
@@ -135,7 +139,7 @@ my $pipeline = $template->write_pipeline( repository_root => $options{repository
 ## set output dir for init-db
 my $init_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/init-db/" . $pipeline->id . "_default/init-db.default.user.config");
-$init_db_config->setval('output', '$;OUTPUT_DIRECTORY;', $output_dir );
+$init_db_config->setval('parameter', '$;PERSISTENT_STORAGE;', $output_dir );
 $init_db_config->RewriteConfig();
 
 ## $fasta_size_filter
@@ -144,22 +148,108 @@ my $fasta_size_filter_config = new Ergatis::ConfigFile(
 $fasta_size_filter_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $fasta_size_filter_config->RewriteConfig();
 
+#### set univec subject database name and path
+my $univec_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config");
+$univec_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $vesion_info->{univec});
+$univec_config->RewriteConfig();
+
+#### set rRNA subject database name and path
+my $rna_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_rna/ncbi-blastn-plus.rna.user.config");
+$rna_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $vesion_info->{rna});
+$rna_config->RewriteConfig();
+
+#### set max threads limit for rubble blast, subject database name and database path
+my $uniref_rubble_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
+$uniref_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
+$uniref_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $options{uniref} );
+$uniref_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $options{mgol_clust} );
+$uniref_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $options{mgol_lookup} );
+$uniref_rubble_config->RewriteConfig();
+
+my $mgol_rubble_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
+$mgol_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
+$mgol_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $options{mgol} );
+$mgol_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $options{mgol_clust} );
+$mgol_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $options{mgol_lookup} );
+$mgol_rubble_config->RewriteConfig();
+
+#### point to PERSISTENT_STORAGE sqlite3 file
+foreach my $token ("mgol", "rna", "uniref", "univec") {
+    my $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");
+    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+#### clean_expand_btab sqlite3 file location
+foreach my $token ("mgol", "rna", "uniref", "univec") {
+    my $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/clean_expand_btab/" . $pipeline->id . "_${token}/clean_expand_btab.${token}.user.config");
+    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+#### stats script sqlite3 file location
+foreach my $component ("env_lib_stats" "fxnal_bin_all_db" "fxnal_bin_per_db" "gen_lib_stats" "libraryHistogram" "orfan" "sequence_classification" "taxonomy_binning") {
+    my $stats_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
+    $stats_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
+    $stats_config->RewriteConfig();
+}
+
+#### db_upload script sqlite3 file location
+foreach my $token ("blastp_mgol", "blastp_uniref", "orf_nuc", "orf_pep" "orfan" "rna-blast" "sequence_read" "sequence_relationship" "sequence_rna" "trna" "univec-blast") {
+    my $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_${token}/db-upload.${token}.user.config");
+    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+#### sequence-prep sqlite3 file location
+foreach my $token ("orf_pep", "orf_nuc", "rna-clean", "rna") {
+    $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_${token}/sequence-prep.${token}.user.config");
+    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+#### database dump sqlite3 location
+foreach my $token ("dump_db", "tRNAscan-prep") {
+    my $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
+    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+#### sequence_relationship-prep sqlite3 location
+$pstore_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/sequence_relationship-prep/" . $pipeline->id . "_default/sequence_relationship-prep.default.user.config");
+$pstore_config->setval('input', '$;INPUT_FILE;', $output_dir . '/processing.sqlite3' );
+$pstore_config->RewriteConfig();
+
+#### db-to-lookup sqlite3 locaiton
+$pstore_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/db-to-lookup/" . $pipeline->id . "_sequence/db-to-lookup.sequence.user.config");
+$pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
+$pstore_config->RewriteConfig();
+
+
+#### fxnal database lookup file
+my $fxnal_per_db_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/fxnal_bin_per_db/" . $pipeline->id . "_default/fxnal_bin_per_db.default.user.config");
+$fxnal_per_db_config->setval('parameter', '$;LOOKUP_DB;', '/opt/database/' . $options{fxn_lookup} );
+$fxnal_per_db_config->RewriteConfig();
+
+
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $dump_db_config->RewriteConfig();
-
-#### set max threads limit for rubble blast
-my $rubble_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
-$rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$rubble_config->RewriteConfig();
-
-my $rubble_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
-$rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$rubble_config->RewriteConfig();
 
 ## Get ready to rumble . . .
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
@@ -179,7 +269,7 @@ if (! $success) {
     $stderr .= "ERROR running component(s): \n";
     foreach my $c (@{$pipeline->{'diagnostics'}->{'components'}}) {
         my $t = $c;
-        $t ~= s/\.default$//;
+        $t =~ s/\.default$//;
 
         $stderr .= "\t$c\n";
 
@@ -187,11 +277,13 @@ if (! $success) {
             my $c = $$t[0];
             my $f = $$t[1];
 
-            open(FHD, "<", $f) or die "Could not open file $f\n$!";
-            while(<FHD>) {
-                $stderr .= "\t\t$_";
+            if (length $f) {
+                open(FHD, "<", $f) or die "Could not open file $f\n$!";
+                while(<FHD>) {
+                    $stderr .= "\t\t$_";
+                }
+                $stderr .= "\n";
             }
-            $stderr .= "\n";
         }
     }
 
@@ -237,7 +329,36 @@ sub check_parameters {
 sub create_output_dir {
     my $dir = shift;
 
-    my $cmd = "mkdir -p $dir/logs";
+    mkpath($dir, 0, '0755');
+}
 
-    system("$cmd");
+###############################################################################
+sub parse_version_info {
+    my $data;
+    {
+        local $/ = undef;
+        open (FHD, "<", '/opt/database/version_info.json')
+            or die "Could not open file /opt/database/version_info.json to read\n";
+        $data = <FHD>;
+        close FHD;
+    }
+
+    return decode_json($data);
+}
+
+###############################################################################
+sub timestamp {
+	my @months   = qw(01 02 03 04 05 06 07 08 09 10 11 12);
+	my @weekDays = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+	my (
+		$second,     $minute,    $hour,
+		$dayOfMonth, $month,     $yearOffset,
+		$dayOfWeek,  $dayOfYear, $daylightSavings
+	  )
+	  = localtime();
+
+	my $year    = 1900 + $yearOffset;
+	my $theTime = $year ."". $months[$month] ."". $dayOfMonth ."". $hour ."". $minute ."". $second;
+
+    return $theTime;
 }

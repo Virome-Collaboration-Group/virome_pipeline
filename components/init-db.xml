@@ -24,7 +24,7 @@
         <name>init-db</name>
         <state>incomplete</state>
         <executable>$;INIT_DB_EXEC$;</executable>
-        <arg>-o $;OUTPUT_DIRECTORY$;</arg>
+        <arg>-o $;OUTPUT_DIRECTORY$; -p $;PERSISTENT_STORAGE$;</arg>
         <param>
             <key>stderr</key>
             <value>$;OUTPUT_DIRECTORY$;/$;COMPONENT_NAME$;.stderr</value>
