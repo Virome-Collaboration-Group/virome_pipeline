@@ -151,30 +151,30 @@ $fasta_size_filter_config->RewriteConfig();
 #### set univec subject database name and path
 my $univec_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config");
-$univec_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $vesion_info->{univec});
+$univec_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{univec});
 $univec_config->RewriteConfig();
 
 #### set rRNA subject database name and path
 my $rna_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_rna/ncbi-blastn-plus.rna.user.config");
-$rna_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $vesion_info->{rna});
+$rna_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{rna});
 $rna_config->RewriteConfig();
 
 #### set max threads limit for rubble blast, subject database name and database path
 my $uniref_rubble_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
 $uniref_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$uniref_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $options{uniref} );
-$uniref_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $options{mgol_clust} );
-$uniref_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $options{mgol_lookup} );
+$uniref_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{uniref} );
+$uniref_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $version_info->{uniref_clust} );
+$uniref_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $version_info->{uniref_lookup} );
 $uniref_rubble_config->RewriteConfig();
 
 my $mgol_rubble_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
 $mgol_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$mgol_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $options{mgol} );
-$mgol_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $options{mgol_clust} );
-$mgol_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $options{mgol_lookup} );
+$mgol_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{mgol} );
+$mgol_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $version_info->{mgol_clust} );
+$mgol_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $version_info->{mgol_lookup} );
 $mgol_rubble_config->RewriteConfig();
 
 #### point to PERSISTENT_STORAGE sqlite3 file
@@ -196,7 +196,7 @@ foreach my $token (@array) {
 
 #### stats script sqlite3 file location
 undef @array;
-@array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning)
+@array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
 foreach my $component (@array) {
     my $stats_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
@@ -206,7 +206,7 @@ foreach my $component (@array) {
 
 #### db_upload script sqlite3 file location
 undef @array;
-@array = qw(blastp_mgol blastp_uniref orf_nuc orf_pep orfan rna-blast sequence_read sequence_relationship sequence_rna trna univec-blast)
+@array = qw(blastp_mgol blastp_uniref orf_nuc orf_pep orfan rna-blast sequence_read sequence_relationship sequence_rna trna univec-blast);
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_${token}/db-upload.${token}.user.config");
@@ -216,9 +216,9 @@ foreach my $token (@array) {
 
 #### sequence-prep sqlite3 file location
 undef @array;
-@array = qw(orf_pep orf_nuc rna-clean rna)
+@array = qw(orf_pep orf_nuc rna-clean rna);
 foreach my $token (@array) {
-    $pstore_config = new Ergatis::ConfigFile(
+    my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_${token}/sequence-prep.${token}.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
@@ -226,8 +226,8 @@ foreach my $token (@array) {
 
 #### database dump sqlite3 location
 undef @array;
-@array = qw(dump_db tRNAscan-prep)
-foreach my $token () {
+@array = qw(dump_db tRNAscan-prep);
+foreach my $component (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
     $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
@@ -235,7 +235,7 @@ foreach my $token () {
 }
 
 #### sequence_relationship-prep sqlite3 location
-$pstore_config = new Ergatis::ConfigFile(
+my $pstore_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/sequence_relationship-prep/" . $pipeline->id . "_default/sequence_relationship-prep.default.user.config");
 $pstore_config->setval('input', '$;INPUT_FILE;', $output_dir . '/processing.sqlite3' );
 $pstore_config->RewriteConfig();
@@ -250,7 +250,7 @@ $pstore_config->RewriteConfig();
 #### fxnal database lookup file
 my $fxnal_per_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/fxnal_bin_per_db/" . $pipeline->id . "_default/fxnal_bin_per_db.default.user.config");
-$fxnal_per_db_config->setval('parameter', '$;LOOKUP_DB;', '/opt/database/' . $options{fxn_lookup} );
+$fxnal_per_db_config->setval('parameter', '$;LOOKUP_DB;', '/opt/database/' . $version_info->{fxn_lookup} );
 $fxnal_per_db_config->RewriteConfig();
 
 
@@ -346,8 +346,8 @@ sub parse_version_info {
     my $data;
     {
         local $/ = undef;
-        open (FHD, "<", '/opt/database/version_info.json')
-            or die "Could not open file /opt/database/version_info.json to read\n";
+        open (FHD, "<", '/opt/database/version_info.json.current')
+            or die "Could not open file /opt/database/version_info.json.current to read\n";
         $data = <FHD>;
         close FHD;
     }
