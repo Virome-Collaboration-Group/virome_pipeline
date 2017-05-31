@@ -128,6 +128,7 @@ $Fasta{$h} = $s;
 
 #### get metagene output file based on prefix
 my $file = `egrep "$options{prefix}\\." $options{mga}`;   # modified 4/4/11 SWP
+chomp($file);
 
 unless (length($file)){
     $logger->logdie("No metagene output file for $options{prefix}");
