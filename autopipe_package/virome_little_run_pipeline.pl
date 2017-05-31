@@ -139,7 +139,7 @@ my $pipeline = $template->write_pipeline( repository_root => $options{repository
 ## set output dir for init-db
 my $init_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/init-db/" . $pipeline->id . "_default/init-db.default.user.config");
-$init_db_config->setval('parameter', '$;PERSISTENT_STORAGE;', $output_dir );
+$init_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
 $init_db_config->RewriteConfig();
 
 ## $fasta_size_filter
@@ -151,30 +151,33 @@ $fasta_size_filter_config->RewriteConfig();
 #### set univec subject database name and path
 my $univec_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config");
-$univec_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{univec});
+$univec_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{univec});
 $univec_config->RewriteConfig();
+
+print "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config";
+exit();
 
 #### set rRNA subject database name and path
 my $rna_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_rna/ncbi-blastn-plus.rna.user.config");
-$rna_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{rna});
+$rna_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{rna});
 $rna_config->RewriteConfig();
 
 #### set max threads limit for rubble blast, subject database name and database path
 my $uniref_rubble_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
-$uniref_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$uniref_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{uniref} );
-$uniref_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $version_info->{uniref_clust} );
-$uniref_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $version_info->{uniref_lookup} );
+$uniref_rubble_config->setval('parameters', '$;THREADS$;', $options{threads} );
+$uniref_rubble_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{uniref} );
+$uniref_rubble_config->setval('parameters', '$;DATABASE_CLUST_PATH$;', '/opt/database/' . $version_info->{uniref_clust} );
+$uniref_rubble_config->setval('parameters', '$;LOOKUP$;', '/opt/database/' . $version_info->{uniref_lookup} );
 $uniref_rubble_config->RewriteConfig();
 
 my $mgol_rubble_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
-$mgol_rubble_config->setval('parameter', '$;THREADS$;', $options{threads} );
-$mgol_rubble_config->setval('parameter', '$;DATABASE_PATH;', '/opt/database/' . $version_info->{mgol} );
-$mgol_rubble_config->setval('parameter', '$;DATABASE_CLUST_PATH;', '/opt/database/' . $version_info->{mgol_clust} );
-$mgol_rubble_config->setval('parameter', '$;LOOKUP;', '/opt/database/' . $version_info->{mgol_lookup} );
+$mgol_rubble_config->setval('parameters', '$;THREADS$;', $options{threads} );
+$mgol_rubble_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{mgol} );
+$mgol_rubble_config->setval('parameters', '$;DATABASE_CLUST_PATH$;', '/opt/database/' . $version_info->{mgol_clust} );
+$mgol_rubble_config->setval('parameters', '$;LOOKUP$;', '/opt/database/' . $version_info->{mgol_lookup} );
 $mgol_rubble_config->RewriteConfig();
 
 #### point to PERSISTENT_STORAGE sqlite3 file
@@ -182,7 +185,7 @@ my @array = qw(mgol rna uniref univec);
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");
-    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
 
@@ -190,7 +193,7 @@ foreach my $token (@array) {
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/clean_expand_btab/" . $pipeline->id . "_${token}/clean_expand_btab.${token}.user.config");
-    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
 
@@ -210,7 +213,7 @@ undef @array;
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_${token}/db-upload.${token}.user.config");
-    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
 
@@ -220,7 +223,7 @@ undef @array;
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_${token}/sequence-prep.${token}.user.config");
-    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
 
@@ -230,14 +233,14 @@ undef @array;
 foreach my $component (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
-    $pstore_config->setval('parameter', '$;DATABASE_FILE;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
 
 #### sequence_relationship-prep sqlite3 location
 my $pstore_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/sequence_relationship-prep/" . $pipeline->id . "_default/sequence_relationship-prep.default.user.config");
-$pstore_config->setval('input', '$;INPUT_FILE;', $output_dir . '/processing.sqlite3' );
+$pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
 $pstore_config->RewriteConfig();
 
 #### db-to-lookup sqlite3 locaiton
@@ -250,7 +253,7 @@ $pstore_config->RewriteConfig();
 #### fxnal database lookup file
 my $fxnal_per_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/fxnal_bin_per_db/" . $pipeline->id . "_default/fxnal_bin_per_db.default.user.config");
-$fxnal_per_db_config->setval('parameter', '$;LOOKUP_DB;', '/opt/database/' . $version_info->{fxn_lookup} );
+$fxnal_per_db_config->setval('parameters', '$;LOOKUP_DB$;', '/opt/database/' . $version_info->{fxn_lookup} );
 $fxnal_per_db_config->RewriteConfig();
 
 
@@ -299,11 +302,11 @@ if (! $success) {
     print STDERR $stderr;
 
     $cmd = "scp /opt/projects/virome/workflow/runtime/pipeline/$pipeline->{'id'}/pipeline.xml.log";
-    $cmd .= " /opt/output/$output_dir/logs/.";
+    $cmd .= " $output_dir/logs/.";
     system("$cmd");
 
-    open(OUT, ">", "/opt/output/$output_dir/logs/$pipeline->{'id'}.stderr") or
-        die "Could not open file to write error log /opt/output/$output_dir/logs/$pipeline->{'id'}.stderr\n";
+    open(OUT, ">", "$output_dir/logs/$pipeline->{'id'}.stderr") or
+        die "Could not open file to write error log $output_dir/logs/$pipeline->{'id'}.stderr\n";
     print OUT $stderr;
     close(OUT);
 }
@@ -338,7 +341,7 @@ sub check_parameters {
 sub create_output_dir {
     my $dir = shift;
 
-    mkpath($dir, 0, '0755');
+    mkpath($dir.'/logs', 0, '0755');
 }
 
 ###############################################################################
