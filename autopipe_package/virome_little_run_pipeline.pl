@@ -346,8 +346,8 @@ sub parse_version_info {
     my $data;
     {
         local $/ = undef;
-        open (FHD, "<", '/opt/database/version_info.json.current')
-            or die "Could not open file /opt/database/version_info.json.current to read\n";
+        open (FHD, "<", '/opt/database/version.json.current')
+            or die "Could not open file /opt/database/version.json.current to read\n";
         $data = <FHD>;
         close FHD;
     }
