@@ -22,14 +22,14 @@ rubble.pl -- runs the RUBBLE protein BLAST pipeline
  This is because RUBBLE with search first against a clustered version of your database
  and then search against only the members of whatever clusters were hit when BLAST'ing
  against your unclustered database.
-
+ 
 =head1 OPTIONS
 
 =over 3
 
 =item B<-q, --query>=FILENAME
 
-Input file in FASTA format. (Required)
+Input file in FASTA format. (Required) 
 
 =item B<-d, --db>=DATABASE
 
@@ -45,7 +45,7 @@ Path to the lookup file that connects the clusters in the cluster database to th
 
 =item B<-o, --out>=FILENAME
 
-Output file in BLAST tabular format. (Required)
+Output file in BLAST tabular format. (Required) 
 
 =item B<-e, --evalue>=FLOAT
 
@@ -69,11 +69,11 @@ Print the RUBBLE version. (Optional)
 
 =item B<-h, --help>
 
-Displays the usage message.  (Optional)
+Displays the usage message.  (Optional) 
 
 =item B<-m, --manual>
 
-Displays full manual.  (Optional)
+Displays full manual.  (Optional) 
 
 =item B<-b, --debug>
 
@@ -89,7 +89,7 @@ Threads
 
 =head1 AUTHOR
 
-Written by Daniel Nasko,
+Written by Daniel Nasko, 
 Center for Bioinformatics and Computational Biology, University of Delaware.
 
 =head1 REPORTING BUGS
@@ -98,12 +98,12 @@ Report bugs to dnasko@udel.edu
 
 =head1 COPYRIGHT
 
-Copyright 2016 Daniel Nasko.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.
+Copyright 2016 Daniel Nasko.  
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
+This is free software: you are free to change and redistribute it.  
+There is NO WARRANTY, to the extent permitted by law.  
 
-Please acknowledge author and affiliation in published work arising from this script's
+Please acknowledge author and affiliation in published work arising from this script's 
 usage <http://bioinformatics.udel.edu/Core/Acknowledge>.
 
 =cut
@@ -122,7 +122,7 @@ my $evalue = 0.001;
 my $threads = 1;
 my $max_target_seqs=500;
 my $version = "1.0";
-GetOptions (
+GetOptions (	
                                 "q|query=s"	=>	\$query,
                                 "d|db=s"        =>      \$db,
                                 "dc|dbClust=s"  =>      \$dbClust,
@@ -145,6 +145,7 @@ pod2usage( -msg  => "\n\n ERROR!  Required argument --db not found.\n\n", -exitv
 pod2usage( -msg  => "\n\n ERROR!  Required argument --dbClust not found.\n\n", -exitval => 2, -verbose => 1) if (! $dbClust);
 pod2usage( -msg  => "\n\n ERROR!  Required argument --lookup not found.\n\n", -exitval => 2, -verbose => 1)  if (! $lookup);
 pod2usage( -msg  => "\n\n ERROR!  Required argument --out not found.\n\n", -exitval => 2, -verbose => 1)     if (! $out);
+my $splitby = 4;
 $threads = int($threads);
 $max_target_seqs = int($max_target_seqs);
 if ($threads < 1) { die "\n Error! --threads needs to be >0 and a whole number.\n";}
@@ -238,18 +239,8 @@ close(OUT);
 ###############################################
 ## 4. Final BLAST using the restriction list ##
 ###############################################
-if ($threads == 1) {
-    my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs;
-    print `$blast_exe`;
-}
-else {
-    # my $passthrough = " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues;
-    # para_blastp("$working_dir/1-cull/query_cull.fasta", $db, "$working_dir/3-blast_final/", $evalue, $threads, $max_target_seqs, $passthrough, "6 qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue");
-    # print `mv $working_dir/3-blast_final/out.btab $out`;
-    my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs . " -num_threads " . $threads;
-    print `$blast_exe`;
-}
-
+my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs . " -num_threads " . $threads;
+print `$blast_exe`;
 
 
 ## Cleaning up.
@@ -269,11 +260,13 @@ sub para_blastp
     my $outfmt = $_[7];
     my @THREADS;
     print `mkdir -p $o/para_blastp`;
+    my %CoreDist = distribute_cores($threads, $splitby);
+    my $nfiles = keys %CoreDist;
     my $seqs=count_seqs($q);
-    my $seqs_per_thread = seqs_per_thread($seqs, $threads);
-    my $nfiles = split_multifasta($q, "$o/para_blastp", "split", $seqs_per_thread, $t);
+    my $seqs_per_thread = seqs_per_thread($seqs, $nfiles);
+    $nfiles = split_multifasta($q, "$o/para_blastp", "split", $seqs_per_thread, $t);
     for (my $i=1; $i<=$nfiles; $i++) {
-	my $blast_exe = "blastp -query $o/para_blastp/split-$i.fsa -db $d -out $o/para_blastp/$i.btab -outfmt \"$outfmt\" -evalue $evalue -max_target_seqs $max " . $pass;
+	my $blast_exe = "blastp -query $o/para_blastp/split-$i.fsa -db $d -out $o/para_blastp/$i.btab -outfmt \"$outfmt\" -evalue $evalue -max_target_seqs $max -num_threads $CoreDist{$i} " . $pass;
 	push (@THREADS, threads->create('task',"$blast_exe"));
     }
     foreach my $thread (@THREADS) {
@@ -315,7 +308,7 @@ sub seqs_per_thread
     my $seqs_per_file = $s / $t;
     if ($seqs_per_file =~ m/\./) {
 	$seqs_per_file =~ s/\..*//;
-	# $seqs_per_file++;
+	$seqs_per_file++;
     }
     return $seqs_per_file;
 }
@@ -331,9 +324,35 @@ sub count_seqs
     close(IN);
     return $s;
 }
+sub distribute_cores
+{
+    my $t = $_[0];
+    my $by = $_[1];
+    my %Hash;
+    my $nsplits = calc_splits($t, $by);
+    my $file=1;
+    for (my $i=1; $i<=$t; $i++){
+	$Hash{$file}++;
+	if ($file==$nsplits) { $file = 0;}
+	$file++;
+    }
+    return %Hash;
+}
+sub calc_splits
+{
+    my $t = $_[0];
+    my $by = $_[1];
+    my $n = roundup($t/$by);
+    return $n;
+}
+sub roundup {
+    my $n = shift;
+    return(($n == int($n)) ? $n : int($n + 1))
+}
 sub task
 {
     system( @_ );
 }
 # VIROME likes: qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue
+
 exit 0;
