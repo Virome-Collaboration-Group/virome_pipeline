@@ -56,6 +56,7 @@ use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use File::Basename;
 use UTILS_V;
+use File::Path;
 
 BEGIN {
   use Ergatis::Logger;
@@ -89,12 +90,13 @@ if( $options{'help'} ){
 &check_parameters(\%options);
 
 my $filename = fileparse($options{input}, qr/\.[^.]*/);
-my $outdir = "/opt/output/". $filename ."_". timestamp();
+my $dirname = $filename ."_". timestamp();
+my $outdir = "/opt/output/". $dirname;
 my $cmd = "";
 
-system ("mkdir -p $outdir");
-system ("mkdir -p $outdir/idFiles");
-system ("mkdir -p $outdir/xDocs");
+mkpath($outdir, 0, '0755');
+mkpath($outdir."/idFiles", 0, '0755');
+mkpath($outdir."/xDocs", 0, '0755');
 ###############################################################################
 $logger->info("Database dump for $filename started");
 
@@ -158,13 +160,41 @@ print OUT "prefix=" . $prefix . "\n";
 print OUT "id=" . $library_id . "\n";
 close(OUT);
 
+#### remove all .tbl files
+$cmd = "rm -rf $outdir/*.dump.tbl";
+system($cmd);
+
 #########################
 ## Create the Tar Ball ##
 #########################
 if (-e "$outdir.tar.gz" ) {
-    print `rm $outdir.tar.gz`;
+    $cmd = "rm $outdir.tar.gz";
+    system($cmd);
 }
-print `tar -czvf $outdir.tar.gz --directory=$outdir $outdir`;
+
+#### create tar without /opt/output in the path.
+$cmd = "tar -czvf $outdir.tar.gz -C /opt/output $dirname";
+system($cmd);
+
+#### get md5sum and touch a file with that name.
+my $md5sum = `md5sum $outdir.tar.gz`;
+chomp $md5sum;
+#### extract only the checksum
+$md5sum =~ s/ $outdir.tar.gz//;
+
+#### trim any spaces there might be;
+$md5sum =~ s/^\s+//;
+$md5sum =~ s/\s+$//;
+
+#### touch a file with md5sum.
+$cmd = "touch /opt/output/$md5sum";
+system($cmd);
+
+#### create a tarball for md5sum file and tar.gz file.
+$cmd = "tar -cvf $outdir.tar -C /opt/output $outdir.tar.gz $md5sum";
+
+#### remove unwanted files;
+$cmd = "rm -rf $outdir.tar.gz $md5sum $outdir";
 
 $logger->info("Database dump for $filename completed");
 exit(0);
