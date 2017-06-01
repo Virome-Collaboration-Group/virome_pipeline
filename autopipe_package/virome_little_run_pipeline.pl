@@ -154,9 +154,6 @@ my $univec_config = new Ergatis::ConfigFile(
 $univec_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{univec});
 $univec_config->RewriteConfig();
 
-print "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config";
-exit();
-
 #### set rRNA subject database name and path
 my $rna_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_rna/ncbi-blastn-plus.rna.user.config");
