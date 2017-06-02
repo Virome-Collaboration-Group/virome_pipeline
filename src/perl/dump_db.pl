@@ -191,11 +191,11 @@ $cmd = "touch /opt/output/$md5sum";
 system($cmd);
 
 #### create a tarball for md5sum file and tar.gz file.
-$cmd = "tar -cvf $outdir.tar -C /opt/output $outdir.tar.gz $md5sum";
+$cmd = "tar -cvf $outdir.tar -C /opt/output $dirname.tar.gz $md5sum";
 system($cmd);
 
 #### remove unwanted files;
-$cmd = "rm -rf $outdir.tar.gz $md5sum $outdir";
+$cmd = "rm -rf $outdir.tar.gz /opt/output/$md5sum $outdir";
 system($cmd);
 
 $logger->info("Database dump for $filename completed");
