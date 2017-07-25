@@ -72,6 +72,7 @@ my $results = GetOptions (\%options,
                           'pipeline|p=s',
                           'pipelineid|r=s',
 						  'database|b=s',
+                          'pstore|s=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -92,9 +93,20 @@ if( $options{'help'} ){
 my $filename = fileparse($options{input}, qr/\.[^.]*/);
 my $dirname = $filename ."_". timestamp();
 my $outdir = "/opt/output/". $dirname;
+
+#### temp overwrite output dir with pstore location
+#### TODO: remove previous output dir assignments
+$outdir = $options{pstore};
+$dirname = fileparse($outdir, qr/\.[^.]*/);
+
+my $rindex = rindex($dirname, "_");
+$filename = substr($dirname, 0, $rindex);  #### remove timestamp
+
 my $cmd = "";
 
-mkpath($outdir, 0, '0755');
+#### output dir should already be created at this time.
+#mkpath($outdir, 0, '0755');
+
 mkpath($outdir."/idFiles", 0, '0755');
 mkpath($outdir."/xDocs", 0, '0755');
 ###############################################################################

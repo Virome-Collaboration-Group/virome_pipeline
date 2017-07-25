@@ -108,17 +108,17 @@ open(IN, "<", $options{input}) || die "\n\n Cannot open the input file: $options
 while(<IN>) {
     chomp;
     if ($_ =~ m/^>/) {
-	unless ($l == 0) {
-	    $s = uc($s);
-	    $Fasta{$h} = $s;
-	    $s = "";
-	}
-	$h = $_;
-	$h =~ s/^>//;
-	$h =~ s/ .*//;
+		unless ($l == 0) {
+		    $s = uc($s);
+		    $Fasta{$h} = $s;
+		    $s = "";
+		}
+		$h = $_;
+		$h =~ s/^>//;
+		$h =~ s/ .*//;
     }
     else {
-	$s = $s . $_;
+		$s = $s . $_;
     }
     $l++;
 }
@@ -149,14 +149,26 @@ while(<IN>) {
 
         if (exists $Fasta{$h}) {
     	    my $nt_orf_seq = get_nt_orf($Fasta{$h}, $a[1], $a[2], $a[3], $a[4]);
-    	    if ($a[3] eq "-") { my $tmp=$a[1]; $a[1]=$a[2];$a[2]=$tmp; }
+    	    if ($a[3] eq "-") {
+				my $tmp=$a[1];
+				$a[1]=$a[2];
+				$a[2]=$tmp;
+			}
+
     	    print NUC ">" . $h . "_" . $a[1] . "_" . $a[2] . "_" . $gid . " size=" . length($nt_orf_seq) . " gc=" . gc($nt_orf_seq) . " start=$a[1]" . " stop=$a[2]" . " strand=$a[3]" . " frame=$a[4]" . " model=" . $Model{$a[7]} . " score=$a[6]" . " type=" . get_type($a[5]) . " caller=MetaGENE" . "\n";
     	    print NUC $nt_orf_seq . "\n";
 
     	    print PEP ">" . $h . "_" . $a[1] . "_" . $a[2] . "_" . $gid . " size=" . orf_len($nt_orf_seq) . " gc=" . gc($nt_orf_seq) . " start=$a[1]" . " stop=$a[2]" . " strand=$a[3]" . " frame=$a[4]" . " model=" . $Model{$a[7]} . " score=$a[6]" . " type=" . get_type($a[5]) . " caller=MetaGENE" . "\n";
     	    my $translated_seq = translate($nt_orf_seq);
-    	    if ($a[5] =~ m/^1/) {$translated_seq =~ s/^./M/;} ## This seems weird, but isnt. MetaGene allows for alternative start codons when predicting ORFs, funny thing about alternative start codons is, even if they are supposed to encode some other peptide the tRNA will always put a Met there.
-    	    print PEP $translated_seq . "\n";
+
+			## This seems weird, but isnt. MetaGene allows for alternative start codons when predicting ORFs,
+			## funny thing about alternative start codons is, even if they are supposed to encode some other
+			## peptide the tRNA will always put a Met there.
+    	    if ($a[5] =~ m/^1/) {
+				$translated_seq =~ s/^./M/;
+			}
+
+			print PEP $translated_seq . "\n";
     	    $nseqs++;
 	    } else {
             $logger->logdie("Error! Cannot find the sequence: $h");

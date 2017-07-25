@@ -49,6 +49,7 @@ use DBI;
 use UTILS_V;
 use Tree::Nary;
 use Pod::Usage;
+use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 BEGIN {
   use Ergatis::Logger;
@@ -100,21 +101,24 @@ my $blst_stmt = qq{SELECT	b.hit_name, b.sequenceId, b.database_name, s.libraryId
 my @dbArray = ("ACLAME", "COG", "UNIREF100P", "KEGG", "SEED", "PHGSEED");
 
 my $r_node;
+my %subject_db_hash;
 $r_node->{name} = "root";
 $r_node->{value} = 1;
 $r_node->{id_list} = "NA";
 
-
-
-# process list for each functional database
+#### process list for each functional database
 foreach my $db (@dbArray){
 	print "\tProcessing db $db\n";
-	# create new tree
+
+    #### Load subjec data into memory so subsequent lookup are faster.
+    load_subject_db($db);
+
+	#### create new tree
 	my $tree = Tree::Nary->new($r_node);
 	my $blst_qry = $dbh->prepare($blst_stmt);
 	$blst_qry->execute($libId, $db);
 
-	# for each database process top fxn hit per sequence
+	#### for each database process top fxn hit per sequence
 	while (my $hits = $blst_qry->fetchrow_hashref()) {
 		my $local_tree;
 		if ($$hits{database_name} =~ /uniref100p|aclame/i){
@@ -179,7 +183,6 @@ sub check_parameters {
 
 }
 
-
 ###############################################################################
 sub timer {
     my @months = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
@@ -191,89 +194,113 @@ sub timer {
 }
 
 ###############################################################################
+sub load_subject_db {
+    my $db = shift;
+
+    my $dbh1 = DBI->connect("dbi:SQLite:dbname=$options{lookupdb}",
+                            "", "", { RaiseError => 1}
+                            ) or die $DBI::errstr;
+
+    $db = lc $db;
+    undef %subject_db_hash;
+    my $acc_stmt = "";
+    if ($db =~ /kegg|cog|seed|phgseed/i) {
+        $acc_stmt = qq{SELECT realacc, fxn1, fxn2, fxn3 FROM ${db}_lookup WHERE 1};
+
+        my $acc_qry = $dbh1->prepare($acc_stmt);
+        $acc_qry->execute();
+        while (my $acc = $acc_qry->fetchrow_hashref()) {
+            $$acc{fxn1} = (defined $$acc{fxn1} && length($$acc{fxn1})) ? $$acc{fxn1} : "Unclassified";
+    		$$acc{fxn2} = (defined $$acc{fxn2} && length($$acc{fxn2})) ? $$acc{fxn2} : "Unclassified";
+    		$$acc{fxn3} = (defined $$acc{fxn3} && length($$acc{fxn3})) ? $$acc{fxn3} : "Unclassified";
+
+    		$$acc{fxn1} =~ s/^\s+//;
+    		$$acc{fxn2} =~ s/^\s+//;
+    		$$acc{fxn3} =~ s/^\s+//;
+    		$$acc{fxn1} =~ s/\s+$//;
+    		$$acc{fxn2} =~ s/\s+$//;
+    		$$acc{fxn3} =~ s/\s+$//;
+
+    		$$acc{fxn1} =~ s/\[/\(/g;
+    		$$acc{fxn1} =~ s/\]/\)/g;
+    		$$acc{fxn2} =~ s/\[/\(/g;
+    		$$acc{fxn2} =~ s/\]/\)/g;
+    		$$acc{fxn3} =~ s/\[/\(/g;
+    		$$acc{fxn3} =~ s/\]/\)/g;
+
+    		$$acc{fxn1} =~ s/unknown/unclassified/i;
+    		$$acc{fxn2} =~ s/unknown/unclassified/i;
+    		$$acc{fxn3} =~ s/unknown/unclassified/i;
+
+    		$$acc{fxn1} = make_proper_case($$acc{fxn1});
+    		$$acc{fxn2} = make_proper_case($$acc{fxn2});
+    		$$acc{fxn3} = make_proper_case($$acc{fxn3});
+
+            #### if acc has multiple fxn info add them to the array.
+            push( @{ $subject_db_hash{$acc->{realacc}} }, { fxn1=>$acc->{fxn1}, fxn2=>$acc->{fxn2}, fxn3=>$acc->{fxn3} } );
+        }
+    } elsif ($db =~ /aclame|uniref100p/i) {
+        $acc_stmt = qq{SELECT realacc, chain_id, level, name FROM ${db}_lookup WHERE 1};
+
+        my $acc_qry = $dbh1->prepare($acc_stmt);
+       	$acc_qry->execute();
+
+       	while (my $acc = $acc_qry->fetchrow_hashref()) {
+            $$acc{name} = (defined $$acc{name} && length($$acc{name})) ? $$acc{name} : "Unclassified";
+
+            $$acc{name} =~ s/^\s+//;
+            $$acc{name} =~ s/\s+$//;
+            $$acc{name} =~ s/\[/\(/g;
+            $$acc{name} =~ s/\]/\)/g;
+
+            $$acc{name} =~ s/unknown/Unclassifed/i;
+            $$acc{name} = make_proper_case($$acc{name});
+
+            push( @{ $subject_db_hash{$acc->{realacc}} }, { chain_id=>$acc->{chain_id}, level=>$acc->{level}, name=>$acc->{name} } );
+        }
+    }
+}
+###############################################################################
 sub createLocalTreeR {
-	my ($hit_name, $sequenceId,$database) = (shift,shift,shift);
+	my ($hit_name, $sequenceId, $database) = (shift,shift,shift);
 	my $local_tree = Tree::Nary->new($r_node);
-
-	my $acc_stmt;
-
-	my $dbh1 = DBI->connect("dbi:SQLite:dbname=$options{lookupdb}",
-							"", "", { RaiseError => 1}
-							) or die $DBI::errstr;
-
-	$database = lc $database;
-	if ($database =~ /kegg|cog/i){
-		$acc_stmt = qq{SELECT	t.realacc, t.fxn1, t.fxn2, t.fxn3
-					  FROM		$database t
-					  WHERE		t.realacc = ?};
-	} elsif ($database =~ /seed|phgseed/i){
-		$acc_stmt = qq{SELECT	t.realacc, t.fxn1, t.fxn2, t.subsystem as fxn3
-					  FROM		$database t
-					  WHERE		t.realacc = ?};
-	}
 
 	my @acc = split(/;/,$hit_name);
 
-	my $acc_qry = $dbh1->prepare($acc_stmt);
-	$acc_qry->execute($acc[0]);
-
 	my $node = $local_tree->{children};
-	while (my $acc = $acc_qry->fetchrow_hashref()) {
-		$$acc{fxn1} = (defined $$acc{fxn1} && length($$acc{fxn1})) ? $$acc{fxn1} : "Unclassified";
-		$$acc{fxn2} = (defined $$acc{fxn2} && length($$acc{fxn2})) ? $$acc{fxn2} : "Unclassified";
-		$$acc{fxn3} = (defined $$acc{fxn3} && length($$acc{fxn3})) ? $$acc{fxn3} : "Unclassified";
 
-		$$acc{fxn1} =~ s/^\s+//;
-		$$acc{fxn2} =~ s/^\s+//;
-		$$acc{fxn3} =~ s/^\s+//;
-		$$acc{fxn1} =~ s/\s+$//;
-		$$acc{fxn2} =~ s/\s+$//;
-		$$acc{fxn3} =~ s/\s+$//;
+    #### get the array of hash for the give accession
+    #### from subject_db_hash
+    foreach my $anno ( @{$subject_db_hash{$acc[0]}} ) {
+        my $n_node = node_child_exist($local_tree, $anno->{fxn1});
+        if (! defined $n_node){
+            my $new_node;
+            $new_node->{name} = $anno->{fxn1};
+            $new_node->{value} = 1;
+            $new_node->{id_list} = $sequenceId;
+            $node = Tree::Nary->append_data($local_tree, $new_node);
+        } else {
+            $node = $n_node;
+        }
 
-		$$acc{fxn1} =~ s/\[/\(/g;
-		$$acc{fxn1} =~ s/\]/\)/g;
-		$$acc{fxn2} =~ s/\[/\(/g;
-		$$acc{fxn2} =~ s/\]/\)/g;
-		$$acc{fxn3} =~ s/\[/\(/g;
-		$$acc{fxn3} =~ s/\]/\)/g;
-
-		$$acc{fxn1} =~ s/unknown/unclassified/i;
-		$$acc{fxn2} =~ s/unknown/unclassified/i;
-		$$acc{fxn3} =~ s/unknown/unclassified/i;
-
-		$$acc{fxn1} = make_proper_case($$acc{fxn1});
-		$$acc{fxn2} = make_proper_case($$acc{fxn2});
-		$$acc{fxn3} = make_proper_case($$acc{fxn3});
-
-		my $n_node = node_child_exist($local_tree,$$acc{fxn1});
+		$n_node = node_child_exist($node, $anno->{fxn2});
 		if (! defined $n_node){
 			my $new_node;
-			$new_node->{name} = $$acc{fxn1};
+			$new_node->{name} = $anno->{fxn2};
 			$new_node->{value} = 1;
 			$new_node->{id_list} = $sequenceId;
-			$node = Tree::Nary->append_data($local_tree,$new_node);
+			$node = Tree::Nary->append_data($node, $new_node);
 		} else {
 			$node = $n_node;
 		}
 
-		$n_node = node_child_exist($node,$$acc{fxn2});
+		$n_node = node_child_exist($node, $anno->{fxn3});
 		if (! defined $n_node){
 			my $new_node;
-			$new_node->{name} = $$acc{fxn2};
+			$new_node->{name} = $anno->{fxn3};
 			$new_node->{value} = 1;
 			$new_node->{id_list} = $sequenceId;
-			$node = Tree::Nary->append_data($node,$new_node);
-		} else {
-			$node = $n_node;
-		}
-
-		$n_node = node_child_exist($node,$$acc{fxn3});
-		if (! defined $n_node){
-			my $new_node;
-			$new_node->{name} = $$acc{fxn3};
-			$new_node->{value} = 1;
-			$new_node->{id_list} = $sequenceId;
-			$node = Tree::Nary->append_data($node,$new_node);
+			$node = Tree::Nary->append_data($node, $new_node);
 		} else {
 			$node = $n_node;
 		}
@@ -288,66 +315,35 @@ sub createLocalTreeAU {
 	my $local_tree = Tree::Nary->new($r_node);
 	my $acc_stmt = "";
 
-	my $dbh1 = DBI->connect("dbi:SQLite:$options{lookupdb}",
-							"", "", { RaiseError => 1}
-							) or die $DBI::errstr;
-
-	if ($database =~ /aclame/i){
-		$acc_stmt = qq{SELECT	a.realacc, af.chain_id, af.level, af.name
-					   FROM		aclamefxn a	INNER JOIN
-								mego_chains af on a.chain_id = af.chain_id
-					   WHERE	a.realacc = ?
-					   ORDER BY af.chain_id asc, af.level asc};
-	} else {
-		$acc_stmt = qq{SELECT	g.realacc, gf.chain_id, gf.level, gf.name
-					   FROM		gofxn g	INNER JOIN
-								go_chains gf on g.chain_id = gf.chain_id
-					   WHERE	g.realacc = ?
-					   ORDER BY gf.chain_id asc, gf.level asc};
-	}
-
-	my @acc = split(/;/,$hit_name);
-
-	my $acc_qry = $dbh1->prepare($acc_stmt);
-	$acc_qry->execute($acc[0]);
+	my @acc = split(/;/, $hit_name);
 
 	my $node = $local_tree->{children};
 	my $prev_chain_id = -1;
 
-	while (my $acc = $acc_qry->fetchrow_hashref()) {
-		$$acc{name} = (defined $$acc{name} && length($$acc{name})) ? $$acc{name} : "Unclassified";
-
-		$$acc{name} =~ s/^\s+//;
-		$$acc{name} =~ s/\s+$//;
-		$$acc{name} =~ s/\[/\(/g;
-		$$acc{name} =~ s/\]/\)/g;
-
-		$$acc{name} =~ s/unknown/Unclassifed/i;
-		$$acc{name} = make_proper_case($$acc{name});
-
+    foreach my $anno ( @{$subject_db_hash{$acc[0]}} ) {
 		my $n_node;
-		if ($prev_chain_id != $$acc{chain_id}){
-			$n_node = node_child_exist($local_tree,$$acc{name});
+		if ($prev_chain_id != $anno->{chain_id}){
+			$n_node = node_child_exist($local_tree, $anno->{name});
 		} else {
-			$n_node = node_child_exist($node,$$acc{name});
+			$n_node = node_child_exist($node, $anno->{name});
 		}
 
 		if (!defined $n_node){
 			my $new_node;
-			$new_node->{name} = $$acc{name};
+			$new_node->{name} = $anno->{name};
 			$new_node->{value} = 1;
 			$new_node->{id_list} = $sequenceId;
 
-			if ($prev_chain_id != $$acc{chain_id}){
-				$node = Tree::Nary->append_data($local_tree,$new_node);
+			if ($prev_chain_id != $anno->{chain_id}){
+				$node = Tree::Nary->append_data($local_tree, $new_node);
 			} else {
-				$node = Tree::Nary->append_data($node,$new_node);
+				$node = Tree::Nary->append_data($node, $new_node);
 			}
 		} else {
 			$node = $n_node;
 		}
 
-		$prev_chain_id = $$acc{chain_id};
+		$prev_chain_id = $anno->{chain_id};
 	}
 
 	return $local_tree;
@@ -539,3 +535,166 @@ sub make_proper_case {
 	return ($new_string);
 
 } # End sub make_proper
+
+# ###################################
+# sub createLocalTreeR {
+# 	my ($hit_name, $sequenceId,$database) = (shift,shift,shift);
+# 	my $local_tree = Tree::Nary->new($r_node);
+#
+# 	my $acc_stmt;
+#
+# 	my $dbh1 = DBI->connect("dbi:SQLite:dbname=$options{lookupdb}",
+# 							"", "", { RaiseError => 1}
+# 							) or die $DBI::errstr;
+#
+# 	$database = lc $database;
+# 	if ($database =~ /kegg|cog/i){
+# 		$acc_stmt = qq{SELECT	t.realacc, t.fxn1, t.fxn2, t.fxn3
+# 					  FROM		$database t
+# 					  WHERE		t.realacc = ?};
+# 	} elsif ($database =~ /seed|phgseed/i){
+# 		$acc_stmt = qq{SELECT	t.realacc, t.fxn1, t.fxn2, t.subsystem as fxn3
+# 					  FROM		$database t
+# 					  WHERE		t.realacc = ?};
+# 	}
+#
+# 	my @acc = split(/;/,$hit_name);
+#
+# 	my $acc_qry = $dbh1->prepare($acc_stmt);
+# 	$acc_qry->execute($acc[0]);
+#
+# 	my $node = $local_tree->{children};
+# 	while (my $acc = $acc_qry->fetchrow_hashref()) {
+# 		$$acc{fxn1} = (defined $$acc{fxn1} && length($$acc{fxn1})) ? $$acc{fxn1} : "Unclassified";
+# 		$$acc{fxn2} = (defined $$acc{fxn2} && length($$acc{fxn2})) ? $$acc{fxn2} : "Unclassified";
+# 		$$acc{fxn3} = (defined $$acc{fxn3} && length($$acc{fxn3})) ? $$acc{fxn3} : "Unclassified";
+#
+# 		$$acc{fxn1} =~ s/^\s+//;
+# 		$$acc{fxn2} =~ s/^\s+//;
+# 		$$acc{fxn3} =~ s/^\s+//;
+# 		$$acc{fxn1} =~ s/\s+$//;
+# 		$$acc{fxn2} =~ s/\s+$//;
+# 		$$acc{fxn3} =~ s/\s+$//;
+#
+# 		$$acc{fxn1} =~ s/\[/\(/g;
+# 		$$acc{fxn1} =~ s/\]/\)/g;
+# 		$$acc{fxn2} =~ s/\[/\(/g;
+# 		$$acc{fxn2} =~ s/\]/\)/g;
+# 		$$acc{fxn3} =~ s/\[/\(/g;
+# 		$$acc{fxn3} =~ s/\]/\)/g;
+#
+# 		$$acc{fxn1} =~ s/unknown/unclassified/i;
+# 		$$acc{fxn2} =~ s/unknown/unclassified/i;
+# 		$$acc{fxn3} =~ s/unknown/unclassified/i;
+#
+# 		$$acc{fxn1} = make_proper_case($$acc{fxn1});
+# 		$$acc{fxn2} = make_proper_case($$acc{fxn2});
+# 		$$acc{fxn3} = make_proper_case($$acc{fxn3});
+#
+# 		my $n_node = node_child_exist($local_tree,$$acc{fxn1});
+# 		if (! defined $n_node){
+# 			my $new_node;
+# 			$new_node->{name} = $$acc{fxn1};
+# 			$new_node->{value} = 1;
+# 			$new_node->{id_list} = $sequenceId;
+# 			$node = Tree::Nary->append_data($local_tree,$new_node);
+# 		} else {
+# 			$node = $n_node;
+# 		}
+#
+# 		$n_node = node_child_exist($node,$$acc{fxn2});
+# 		if (! defined $n_node){
+# 			my $new_node;
+# 			$new_node->{name} = $$acc{fxn2};
+# 			$new_node->{value} = 1;
+# 			$new_node->{id_list} = $sequenceId;
+# 			$node = Tree::Nary->append_data($node,$new_node);
+# 		} else {
+# 			$node = $n_node;
+# 		}
+#
+# 		$n_node = node_child_exist($node,$$acc{fxn3});
+# 		if (! defined $n_node){
+# 			my $new_node;
+# 			$new_node->{name} = $$acc{fxn3};
+# 			$new_node->{value} = 1;
+# 			$new_node->{id_list} = $sequenceId;
+# 			$node = Tree::Nary->append_data($node,$new_node);
+# 		} else {
+# 			$node = $n_node;
+# 		}
+# 	}
+#
+# 	return $local_tree;
+# }
+#
+# ###############################################################################
+# sub createLocalTreeAU {
+# 	my ($hit_name, $sequenceId, $database) = (shift,shift,shift);
+# 	my $local_tree = Tree::Nary->new($r_node);
+# 	my $acc_stmt = "";
+#
+# 	my $dbh1 = DBI->connect("dbi:SQLite:$options{lookupdb}",
+# 							"", "", { RaiseError => 1}
+# 							) or die $DBI::errstr;
+#
+# 	if ($database =~ /aclame/i){
+# 		$acc_stmt = qq{SELECT	a.realacc, af.chain_id, af.level, af.name
+# 					   FROM		aclamefxn a	INNER JOIN
+# 								mego_chains af on a.chain_id = af.chain_id
+# 					   WHERE	a.realacc = ?
+# 					   ORDER BY af.chain_id asc, af.level asc};
+# 	} else {
+# 		$acc_stmt = qq{SELECT	g.realacc, gf.chain_id, gf.level, gf.name
+# 					   FROM		gofxn g	INNER JOIN
+# 								go_chains gf on g.chain_id = gf.chain_id
+# 					   WHERE	g.realacc = ?
+# 					   ORDER BY gf.chain_id asc, gf.level asc};
+# 	}
+#
+# 	my @acc = split(/;/,$hit_name);
+#
+# 	my $acc_qry = $dbh1->prepare($acc_stmt);
+# 	$acc_qry->execute($acc[0]);
+#
+# 	my $node = $local_tree->{children};
+# 	my $prev_chain_id = -1;
+#
+# 	while (my $acc = $acc_qry->fetchrow_hashref()) {
+# 		$$acc{name} = (defined $$acc{name} && length($$acc{name})) ? $$acc{name} : "Unclassified";
+#
+# 		$$acc{name} =~ s/^\s+//;
+# 		$$acc{name} =~ s/\s+$//;
+# 		$$acc{name} =~ s/\[/\(/g;
+# 		$$acc{name} =~ s/\]/\)/g;
+#
+# 		$$acc{name} =~ s/unknown/Unclassifed/i;
+# 		$$acc{name} = make_proper_case($$acc{name});
+#
+# 		my $n_node;
+# 		if ($prev_chain_id != $$acc{chain_id}){
+# 			$n_node = node_child_exist($local_tree,$$acc{name});
+# 		} else {
+# 			$n_node = node_child_exist($node,$$acc{name});
+# 		}
+#
+# 		if (!defined $n_node){
+# 			my $new_node;
+# 			$new_node->{name} = $$acc{name};
+# 			$new_node->{value} = 1;
+# 			$new_node->{id_list} = $sequenceId;
+#
+# 			if ($prev_chain_id != $$acc{chain_id}){
+# 				$node = Tree::Nary->append_data($local_tree,$new_node);
+# 			} else {
+# 				$node = Tree::Nary->append_data($node,$new_node);
+# 			}
+# 		} else {
+# 			$node = $n_node;
+# 		}
+#
+# 		$prev_chain_id = $$acc{chain_id};
+# 	}
+#
+# 	return $local_tree;
+# }
