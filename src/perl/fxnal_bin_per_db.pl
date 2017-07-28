@@ -202,8 +202,11 @@ sub load_subject_db {
                             ) or die $DBI::errstr;
 
     $db = lc $db;
+    $db =~ s/uniref100p/go/;  #### change table name from uniref100p to go
+
     undef %subject_db_hash;
     my $acc_stmt = "";
+
     if ($db =~ /kegg|cog|seed|phgseed/i) {
         $acc_stmt = qq{SELECT realacc, fxn1, fxn2, fxn3 FROM ${db}_lookup WHERE 1};
 
@@ -239,7 +242,7 @@ sub load_subject_db {
             #### if acc has multiple fxn info add them to the array.
             push( @{ $subject_db_hash{$acc->{realacc}} }, { fxn1=>$acc->{fxn1}, fxn2=>$acc->{fxn2}, fxn3=>$acc->{fxn3} } );
         }
-    } elsif ($db =~ /aclame|uniref100p/i) {
+    } elsif ($db =~ /aclame|go/i) {
         $acc_stmt = qq{SELECT realacc, chain_id, level, name FROM ${db}_lookup WHERE 1};
 
         my $acc_qry = $dbh1->prepare($acc_stmt);
