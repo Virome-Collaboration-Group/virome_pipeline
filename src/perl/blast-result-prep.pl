@@ -153,7 +153,7 @@ my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
 $sth->execute;
 
 while ( my $result = $sth->fetchrow_hashref() ) {
-	if (defined $result->{max_id}) {
+	if ( (defined $result->{max_id}) && ($result->{max_id} =~ /^[+-]?\d+$/) ) {
 		$max_id = $result->{max_id} + 1;
 	} else {
 		$max_id = 1;

@@ -97,6 +97,7 @@ unless(-s $options{input} > 0){
 ###############################################################################
 #### database connection
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
+my $max_id = 0;
 
 my $sth = $dbh->prepare('SELECT id,name FROM sequence WHERE 1');
 $sth->execute;
@@ -104,6 +105,17 @@ $sth->execute;
 my %sequence_hash;
 while ( my $result = $sth->fetchrow_hashref() ) {
 	$sequence_hash{$result->{name}} = $result->{id};
+}
+
+$sth = $dbh->prepare('SELECT max(id) as max_id FROM tRNA');
+$sth->execute;
+
+while ( my $result = $sth->fetchrow_hashref() ) {
+	if ( (defined $result->{max_id}) && ($result->{max_id} =~ /^[+-]?\d+$/) ) {
+		$max_id = $result->{max_id} + 1;
+	} else {
+		$max_id = 1;
+	}
 }
 
 ## tRNAScan-SE score threshold
@@ -127,8 +139,12 @@ while (<DAT>){
             $info[4] =~ s/pse/Pseudo/i;
             $info[4] =~ s/und/Undef/i;
 
-            print OUT join("\t",$sequence_hash{trim($info[0])}, trim($info[1]), trim($info[2]), trim($info[3]),
-            	   trim($info[4]), trim($info[5]), trim($info[6]), trim($info[7]), trim($info[8]))."\n";
+            my $timestamp = getTimeStamp();
+
+            print OUT join("\t", $max_id, $sequence_hash{trim($info[0])}, trim($info[1]), trim($info[2]), trim($info[3]),
+            	   trim($info[4]), trim($info[5]), trim($info[6]), trim($info[7]), trim($info[8]), $timestamp, 0)."\n";
+
+            $max_id++;
         }
     }
 }
@@ -158,4 +174,13 @@ sub trim {
     $str =~ s/\s+$//;
 
     return $str;
+}
+
+###############################################################################
+sub getTimeStamp{
+	my $ts = `date +"%Y-%m-%d %H:%M:%S"`;
+
+	chomp $ts;
+
+	return $ts;
 }

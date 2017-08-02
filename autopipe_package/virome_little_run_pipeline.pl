@@ -258,7 +258,7 @@ $fxnal_per_db_config->RewriteConfig();
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
-$init_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
+$dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
 $dump_db_config->RewriteConfig();
 
 ## Get ready to rumble . . .
