@@ -50,6 +50,7 @@ use UTILS_V;
 use Tree::Nary;
 use Pod::Usage;
 use Data::Dumper;
+use JSON;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 BEGIN {
   use Ergatis::Logger;
@@ -101,7 +102,7 @@ my $blst_stmt = qq{SELECT	b.hit_name, b.sequenceId, b.database_name, s.libraryId
 my @dbArray = ("ACLAME", "COG", "UNIREF100P", "KEGG", "SEED", "PHGSEED");
 
 my $r_node;
-my %subject_db_hash;
+my $subject_db_hash = {};
 $r_node->{name} = "root";
 $r_node->{value} = 1;
 $r_node->{id_list} = "NA";
@@ -159,7 +160,7 @@ foreach my $db (@dbArray){
 $dbh->disconnect;
 
 
-$logger->info("Functional binning per database for $options{sample} complete");
+$logger->info("Functional binning per database complete");
 exit(0);
 
 
@@ -204,64 +205,13 @@ sub load_subject_db {
     $db = lc $db;
     $db =~ s/uniref100p/go/;  #### change table name from uniref100p to go
 
-    undef %subject_db_hash;
+    $subject_db_hash = {};
     my $acc_stmt = "";
+    $acc_stmt = qq{SELECT realacc, block FROM ${db}_lookup};
 
-    if ($db =~ /kegg|cog|seed|phgseed/i) {
-        $acc_stmt = qq{SELECT realacc, fxn1, fxn2, fxn3 FROM ${db}_lookup WHERE 1};
-
-        my $acc_qry = $dbh1->prepare($acc_stmt);
-        $acc_qry->execute();
-        while (my $acc = $acc_qry->fetchrow_hashref()) {
-            $$acc{fxn1} = (defined $$acc{fxn1} && length($$acc{fxn1})) ? $$acc{fxn1} : "Unclassified";
-    		$$acc{fxn2} = (defined $$acc{fxn2} && length($$acc{fxn2})) ? $$acc{fxn2} : "Unclassified";
-    		$$acc{fxn3} = (defined $$acc{fxn3} && length($$acc{fxn3})) ? $$acc{fxn3} : "Unclassified";
-
-    		$$acc{fxn1} =~ s/^\s+//;
-    		$$acc{fxn2} =~ s/^\s+//;
-    		$$acc{fxn3} =~ s/^\s+//;
-    		$$acc{fxn1} =~ s/\s+$//;
-    		$$acc{fxn2} =~ s/\s+$//;
-    		$$acc{fxn3} =~ s/\s+$//;
-
-    		$$acc{fxn1} =~ s/\[/\(/g;
-    		$$acc{fxn1} =~ s/\]/\)/g;
-    		$$acc{fxn2} =~ s/\[/\(/g;
-    		$$acc{fxn2} =~ s/\]/\)/g;
-    		$$acc{fxn3} =~ s/\[/\(/g;
-    		$$acc{fxn3} =~ s/\]/\)/g;
-
-    		$$acc{fxn1} =~ s/unknown/unclassified/i;
-    		$$acc{fxn2} =~ s/unknown/unclassified/i;
-    		$$acc{fxn3} =~ s/unknown/unclassified/i;
-
-    		$$acc{fxn1} = make_proper_case($$acc{fxn1});
-    		$$acc{fxn2} = make_proper_case($$acc{fxn2});
-    		$$acc{fxn3} = make_proper_case($$acc{fxn3});
-
-            #### if acc has multiple fxn info add them to the array.
-            push( @{ $subject_db_hash{$acc->{realacc}} }, { fxn1=>$acc->{fxn1}, fxn2=>$acc->{fxn2}, fxn3=>$acc->{fxn3} } );
-        }
-    } elsif ($db =~ /aclame|go/i) {
-        $acc_stmt = qq{SELECT realacc, chain_id, level, name FROM ${db}_lookup WHERE 1};
-
-        my $acc_qry = $dbh1->prepare($acc_stmt);
-       	$acc_qry->execute();
-
-       	while (my $acc = $acc_qry->fetchrow_hashref()) {
-            $$acc{name} = (defined $$acc{name} && length($$acc{name})) ? $$acc{name} : "Unclassified";
-
-            $$acc{name} =~ s/^\s+//;
-            $$acc{name} =~ s/\s+$//;
-            $$acc{name} =~ s/\[/\(/g;
-            $$acc{name} =~ s/\]/\)/g;
-
-            $$acc{name} =~ s/unknown/Unclassifed/i;
-            $$acc{name} = make_proper_case($$acc{name});
-
-            push( @{ $subject_db_hash{$acc->{realacc}} }, { chain_id=>$acc->{chain_id}, level=>$acc->{level}, name=>$acc->{name} } );
-        }
-    }
+    my $acc_qry = $dbh1->prepare($acc_stmt);
+    $acc_qry->execute();
+    $subject_db_hash = $acc_qry->fetchall_hashref("realacc");
 }
 ###############################################################################
 sub createLocalTreeR {
@@ -274,7 +224,13 @@ sub createLocalTreeR {
 
     #### get the array of hash for the give accession
     #### from subject_db_hash
-    foreach my $anno ( @{$subject_db_hash{$acc[0]}} ) {
+    my $block = $subject_db_hash->{$acc[0]}->{block};
+
+    #### end fuction if no annoation block for give acc
+    #### e.g go acc A0A0F9WK84
+    return $local_tree if (length($block) == 0);
+
+    foreach my $anno ( @{ decode_json($block) } ) {
         my $n_node = node_child_exist($local_tree, $anno->{fxn1});
         if (! defined $n_node){
             my $new_node;
@@ -323,8 +279,16 @@ sub createLocalTreeAU {
 	my $node = $local_tree->{children};
 	my $prev_chain_id = -1;
 
-    foreach my $anno ( @{$subject_db_hash{$acc[0]}} ) {
-		my $n_node;
+    #### get the array of hash for the give accession
+    #### from subject_db_hash
+    my $block = $subject_db_hash->{$acc[0]}->{block};
+
+    #### end fuction if no annoation block for give acc
+    #### e.g go acc A0A0F9WK84
+    return $local_tree if (length($block) == 0);
+
+    foreach my $anno ( @{ decode_json($block) } ) {
+    	my $n_node;
 		if ($prev_chain_id != $anno->{chain_id}){
 			$n_node = node_child_exist($local_tree, $anno->{name});
 		} else {

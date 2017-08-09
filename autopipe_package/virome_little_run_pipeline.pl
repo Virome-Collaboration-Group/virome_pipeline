@@ -142,6 +142,13 @@ my $init_db_config = new Ergatis::ConfigFile(
 $init_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
 $init_db_config->RewriteConfig();
 
+#### final dump input file setup
+my $dump_db_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
+$dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
+$dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
+$dump_db_config->RewriteConfig();
+
 ## $fasta_size_filter
 my $fasta_size_filter_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/fasta_size_filter/" . $pipeline->id . "_default/fasta_size_filter.default.user.config");
@@ -252,14 +259,6 @@ my $fxnal_per_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/fxnal_bin_per_db/" . $pipeline->id . "_default/fxnal_bin_per_db.default.user.config");
 $fxnal_per_db_config->setval('parameters', '$;LOOKUP_DB$;', '/opt/database/' . $version_info->{fxn_lookup} );
 $fxnal_per_db_config->RewriteConfig();
-
-
-#### final dump input file setup
-my $dump_db_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
-$dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
-$dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
-$dump_db_config->RewriteConfig();
 
 ## Get ready to rumble . . .
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
