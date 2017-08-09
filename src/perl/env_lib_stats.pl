@@ -66,6 +66,7 @@ use UTILS_V;
 use POSIX qw(ceil floor);
 use Pod::Usage;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
+use File::Path qw(make_path remove_tree mkpath);
 
 BEGIN {
 	use Ergatis::Logger;
@@ -386,9 +387,8 @@ sub check_parameters {
         }
     }
 
-    system ("mkdir -p $options{outdir}/idFiles");
-    system ("mkdir -p $options{outdir}/xDocs");
-
+	make_path($options{outdir}."/idFiles");
+	make_path($options{outdir}."/xDocs");
 }
 
 ###############################################################################

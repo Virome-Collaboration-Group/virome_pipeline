@@ -17,10 +17,10 @@ split_multifasta.pl - split a single FASTA file containing multiple sequences in
 
 =head1 SYNOPSIS
 
-USAGE: split_multifasta.pl 
-            --input_file=/path/to/some_file.fsa 
+USAGE: split_multifasta.pl
+            --input_file=/path/to/some_file.fsa
             --output_dir=/path/to/somedir
-          [ --output_list=/path/to/somefile.list 
+          [ --output_list=/path/to/somefile.list
             --output_subdir_size=1000
             --output_subdir_prefix=fasta
             --seqs_per_file=1
@@ -52,7 +52,7 @@ B<--output_subdir_size,-u>
 
 B<--output_subdir_prefix,-p>
     To be used along with --output_subdir_size, this allows more control of the names of the
-    subdirectories created.  Rather than just incrementing numbers (like 10), each subdirectory 
+    subdirectories created.  Rather than just incrementing numbers (like 10), each subdirectory
     will be named with this prefix (like prefix10).
 
 B<--total_files, -t>
@@ -62,11 +62,11 @@ B<--total_files, -t>
 
 B<--compress_output,-c>
     Output fasta files will be gzipped when written.
-    
-B<--debug,-d> 
-    Debug level.  Use a large number to turn on verbose debugging. 
 
-B<--log,-l> 
+B<--debug,-d>
+    Debug level.  Use a large number to turn on verbose debugging.
+
+B<--log,-l>
     Log file
 
 B<--help,-h>
@@ -94,7 +94,7 @@ For example:
     CTTGTCCATGCGGGGTGTGGGGCTTGCCCCGCCGATAGAGACCGGCCACCACCATGGCACCCGGTCGCGG
     GGTGATCGGCCACCACCACCGCCCCCGGCCACTCTCCCCCTGTCTAGGCCATATTTCAGGCCGTCCACTG
 
-Whitespace is ignored within the input file.  See the OUTPUT section for more on creation of 
+Whitespace is ignored within the input file.  See the OUTPUT section for more on creation of
 output files.
 
 =head1  OUTPUT
@@ -123,7 +123,7 @@ If you have an FASTA file containing 95000 sequences, and use the following opti
 
     --output_dir=/some/path
     --output_subdir_size=30000
-    
+
 The following will be created:
 
     directory              file count
@@ -136,12 +136,12 @@ The following will be created:
 If you choose to create a list file (and you probably want to), it will contain these proper paths.
 
 You may not want the subdirectories to simply be numbers, as above, so you can use the
---output_subdir_prefix option.  For example:        
+--output_subdir_prefix option.  For example:
 
     --output_dir=/some/path
     --output_subdir_size=30000
     --output_subdir_prefix=fasta
-    
+
 The following will be created:
 
     directory              file count
@@ -155,13 +155,13 @@ Finally, you can write multiple sequences to each output file using the --seqs_p
 can be used along with --outupt_subdir_size and --output_subdir_prefix.  The main difference to note
 is that, if you use --seqs_per_file, the fasta file created will no longer be named using values
 taken from the header, since it will contain multiple headers.  Instead, the file will simply be
-named using sequential numbers starting at 1 (like 1.fsa).  For example: 
+named using sequential numbers starting at 1 (like 1.fsa).  For example:
 
     --output_dir=/some/path
     --output_subdir_size=3000
     --output_subdir_prefix=fasta
     --seqs_per_file=10
-    
+
 The following will be created:
 
     directory              file count
@@ -182,12 +182,14 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use POSIX;
+use File::Path qw(make_path remove_tree mkpath);
+
 BEGIN {
-use Ergatis::Logger;
+    use Ergatis::Logger;
 }
 
 my %options = ();
-my $results = GetOptions (\%options, 
+my $results = GetOptions (\%options,
                           'input_file|i=s',
                           'output_dir|o=s',
                           'output_file_prefix|f=s',
@@ -301,12 +303,12 @@ exit;
 
 sub check_parameters {
     my $options = shift;
-    
+
     ## make sure input_file and output_dir were passed
     unless ( $options{input_file} && $options{output_dir} ) {
         $logger->logdie("You must pass both --input_file and --output_dir");
     }
-    
+
     ## make sure input_file exists
     if (! -e $options{input_file} ) {
         if ( -e "$options{input_file}.gz" ) {
@@ -315,7 +317,7 @@ sub check_parameters {
             $logger->logdie("the input file passed ($options{input_file}) cannot be read or does not exist");
         }
     }
-    
+
     ## make sure the output_dir exists
     if (! -e "$options{output_dir}") {
         $logger->logdie("the output directory passed could not be read or does not exist");
@@ -331,12 +333,12 @@ sub check_parameters {
     if (defined $options{total_files} && $options{total_files} < 1) {
         $logger->logdie("total_files setting cannot be less than one");
     }
-    
+
     ## seqs_per_file, if passed, must be at least one
     if (defined $options{seqs_per_file} && $options{seqs_per_file} < 1) {
         $logger->logdie("seq_per_file setting cannot be less than one");
     }
-    
+
     ## handle some defaults
     $options{output_subdir_size}   = 0  unless ($options{output_subdir_size});
     $options{output_subdir_prefix} = '' unless ($options{output_subdir_prefix});
@@ -347,65 +349,64 @@ sub check_parameters {
 
 sub writeSequence {
     my ($header, $seq) = @_;
-    
+
     ## the id used to write the output file will be the first thing
     ##  in the header up to the first whitespace.  get that.
     $$header =~ /^(\S+)/ || $logger->logdie( "can't pull out an id on header $$header" );
     my $id = $1;
-    
+
     ## because it is going to be the filename, we're going to take out the characters that are bad form to use
     ## legal characters = a-z A-Z 0-9 - . _
     $id =~ s/[^a-z0-9\-_.]/_/gi;
-    
+
     my $dirpath;
-    
+
     ## if we're writing more than one sequence to a file, change the id from
     ##  fasta header to the current group file name
     if ($options{seqs_per_file} > 1) {
         $id = $group_filename_prefix;
-        
+
         ## did the user ask for a file prefix?
         if ( $options{output_file_prefix} ) {
             $id = $options{output_file_prefix} . $id;
         }
     }
 
-    
+
     ## the path depends on whether we are using output subdirectories
     if ($options{output_subdir_size}) {
         $dirpath = "$options{'output_dir'}/$options{output_subdir_prefix}$sub_dir";
     } else {
         $dirpath = "$options{'output_dir'}";
     }
-    
+
     ## did the user ask for a file prefix?
     my $filepath = "$dirpath/$id.fsa";
-    
+
     ## take any // out of the filepath
     $filepath =~ s|/+|/|g;
-    
+
     ## write the sequence
     $logger->debug("Writing sequence to $filepath") if ($logger->is_debug());
-    
+
     ## open a new output file if we need to
     ##  if we're writing multiple sequences per file, we only open a new
     ##  one when $seqs_in_file = 0 (first sequence)
     if ($seqs_in_file == 0) {
-        
+
         ## if the directory we want to write to doesn't exist yet, create it
-        mkdir($dirpath) unless (-e $dirpath);
-   
-        
-        if ($options{'compress_output'}) {    
+        make_path($dirpath);
+
+        if ($options{'compress_output'}) {
             open ($ofh, ">:gzip", $filepath.".gz")
               || $logger->logdie("can't create '$filepath.gz':\n$!");
         } else {
             open ($ofh, ">$filepath") || $logger->logdie("can't create '$filepath':\n$!");
-        
+
         }
         $total_files_created++;
         $seq_file_count++;
-        
+
         ## add the file we just wrote to the list, if we were asked to
         if (defined $options{output_list}) {
             print $listfh "$filepath\n";
@@ -421,8 +422,8 @@ sub writeSequence {
     ## write the sequence
     print $ofh ">$$header\n$$seq\n";
     $seqs_in_file++;
-    
-    ## if we hit the limit of how many we want in each file, set the next file name and 
+
+    ## if we hit the limit of how many we want in each file, set the next file name and
     ##  reset the count of seqs within the file
     if ($options{seqs_per_file} == $seqs_in_file) {
         $seqs_in_file = 0;
@@ -444,7 +445,7 @@ sub set_seqs_per_total_files {
 
     ## calculate how many sequences we should have per file to meet the total_files parameter request.
     my $seqs_per_file = int($seq_count / $tot_files);
-   
+
     ## reset filehandle
     seek $fh,0,0;
 

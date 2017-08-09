@@ -51,7 +51,9 @@ use Tree::Nary;
 use Pod::Usage;
 use Data::Dumper;
 use JSON;
+use File::Path qw(make_path remove_tree mkpath);
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
+
 BEGIN {
   use Ergatis::Logger;
 }
@@ -179,9 +181,8 @@ sub check_parameters {
         }
     }
 
-    system ("mkdir -p $options{outdir}/idFiles");
-    system ("mkdir -p $options{outdir}/xDocs");
-
+    make_path($options{outdir}."/idFiles");
+    make_path($options{outdir}."/xDocs");
 }
 
 ###############################################################################

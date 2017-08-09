@@ -56,7 +56,7 @@ use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use File::Basename;
 use UTILS_V;
-use File::Path;
+use File::Path qw(make_path remove_tree mkpath);
 
 BEGIN {
   use Ergatis::Logger;
@@ -107,8 +107,8 @@ my $cmd = "";
 #### output dir should already be created at this time.
 #mkpath($outdir, 0, '0755');
 
-mkpath($outdir."/idFiles", 0, '0755');
-mkpath($outdir."/xDocs", 0, '0755');
+make_path($outdir."/idFiles");
+make_path($outdir."/xDocs");
 ###############################################################################
 $logger->info("Database dump for $filename started");
 
@@ -191,6 +191,7 @@ system($cmd);
 #### get md5sum and touch a file with that name.
 my $md5sum = `md5sum $outdir.tar.gz`;
 chomp $md5sum;
+
 #### extract only the checksum
 $md5sum =~ s/ $outdir.tar.gz//;
 

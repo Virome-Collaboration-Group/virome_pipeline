@@ -22,14 +22,14 @@ rubble.pl -- runs the RUBBLE protein BLAST pipeline
  This is because RUBBLE with search first against a clustered version of your database
  and then search against only the members of whatever clusters were hit when BLAST'ing
  against your unclustered database.
- 
+
 =head1 OPTIONS
 
 =over 3
 
 =item B<-q, --query>=FILENAME
 
-Input file in FASTA format. (Required) 
+Input file in FASTA format. (Required)
 
 =item B<-d, --db>=DATABASE
 
@@ -45,7 +45,7 @@ Path to the lookup file that connects the clusters in the cluster database to th
 
 =item B<-o, --out>=FILENAME
 
-Output file in BLAST tabular format. (Required) 
+Output file in BLAST tabular format. (Required)
 
 =item B<-e, --evalue>=FLOAT
 
@@ -69,11 +69,11 @@ Print the RUBBLE version. (Optional)
 
 =item B<-h, --help>
 
-Displays the usage message.  (Optional) 
+Displays the usage message.  (Optional)
 
 =item B<-m, --manual>
 
-Displays full manual.  (Optional) 
+Displays full manual.  (Optional)
 
 =item B<-b, --debug>
 
@@ -89,7 +89,7 @@ Threads
 
 =head1 AUTHOR
 
-Written by Daniel Nasko, 
+Written by Daniel Nasko,
 Center for Bioinformatics and Computational Biology, University of Delaware.
 
 =head1 REPORTING BUGS
@@ -98,12 +98,12 @@ Report bugs to dnasko@udel.edu
 
 =head1 COPYRIGHT
 
-Copyright 2016 Daniel Nasko.  
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
-This is free software: you are free to change and redistribute it.  
-There is NO WARRANTY, to the extent permitted by law.  
+Copyright 2016 Daniel Nasko.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
 
-Please acknowledge author and affiliation in published work arising from this script's 
+Please acknowledge author and affiliation in published work arising from this script's
 usage <http://bioinformatics.udel.edu/Core/Acknowledge>.
 
 =cut
@@ -114,6 +114,7 @@ use Getopt::Long;
 use File::Basename;
 use Pod::Usage;
 use threads;
+use File::Path qw(make_path remove_tree mkpath);
 
 ## ARGUMENTS WITH NO DEFAULT
 my($query,$db,$dbClust,$lookup,$out,$grid,$help,$manual,$debug,$ver);
@@ -122,7 +123,7 @@ my $evalue = 0.001;
 my $threads = 1;
 my $max_target_seqs=500;
 my $version = "1.0";
-GetOptions (	
+GetOptions (
                                 "q|query=s"	=>	\$query,
                                 "d|db=s"        =>      \$db,
                                 "dc|dbClust=s"  =>      \$dbClust,
@@ -165,11 +166,12 @@ my @chars = ("A".."Z", "a".."z");
 my $rand_string;
 $rand_string .= $chars[rand @chars] for 1..8;
 my $working_dir = $outdir . "/rubble_working_" . $rand_string;
-print `mkdir -p $working_dir`;
-print `mkdir -p $working_dir/0-blast_clust`;
-print `mkdir -p $working_dir/1-cull`;
-print `mkdir -p $working_dir/2-restrict`;
-print `mkdir -p $working_dir/3-blast_final`;
+
+make_path($working_dir);
+make_path($working_dir."/0-blast_clust");
+make_path($working_dir."/1-cull");
+make_path($working_dir."/2-restrict");
+make_path($working_dir."/3-blast_final");
 
 #################################################
 ## 1. Initial BLAST against clustered BLAST DB ##
@@ -259,7 +261,9 @@ sub para_blastp
     my $pass = $_[6];
     my $outfmt = $_[7];
     my @THREADS;
-    print `mkdir -p $o/para_blastp`;
+
+    make_path("$o/para_blastp");
+
     my %CoreDist = distribute_cores($threads, $splitby);
     my $nfiles = keys %CoreDist;
     my $seqs=count_seqs($q);
@@ -283,7 +287,9 @@ sub split_multifasta
     my $nfiles  = $_[4];
     my $j=0;
     my $fileNumber=1;
-    print `mkdir -p $working`;
+
+    make_path($working);
+
     open(IN,"<$q") || die "\n Cannot open the file: $q\n";
     open (OUT, "> $working/$prefix-$fileNumber.fsa") or die "Error! Cannot create output file: $working/$prefix-$fileNumber.fsa\n";
     while(<IN>) {

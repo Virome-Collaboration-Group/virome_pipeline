@@ -48,6 +48,7 @@ use Pod::Usage;
 use Data::Dumper;
 use UTILS_V;
 use MLDBM 'DB_File';
+use File::Path qw(make_path remove_tree mkpath);
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 
 BEGIN {
@@ -148,48 +149,8 @@ sub check_parameters {
         }
     }
 
-    system ("mkdir -p $options{outdir}/idFiles");
-    system ("mkdir -p $options{outdir}/xDocs");
-
-}
-
-#############################################################################
-sub create_dir_struct {
-	my $options = shift;
-
-	my $dir = $this->{output_dir};
-	my $str = "";
-	my @arr = split(/\//, $dir);
-
-	#### assuming path always starts with /
-	#### in which case first array element is empty
-	@arr = @arr[1..$#arr];
-
-	foreach my $d (@arr){
-		$str .= "/$d";
-
-		unless (-d $str) {
-			mkdir $str, 0770 or $logger->logdie("Could not create dir $str");
-			$logger->info("mkdir $str, 0770");
-		}
-	}
-
-	$dir = $this->{scratch};
-	$str = "";
-	@arr = split(/\//, $dir);
-
-	#### assuming path always starts with /
-	#### in which case first array element is empty
-	@arr = @arr[1..$#arr];
-
-	foreach my $d (@arr){
-		$str .= "/$d";
-
-		unless (-d $str) {
-			mkdir $str, 0770 or $logger->logdie("Could not create dir $str");
-			$logger->info("mkdir $str, 0770");
-		}
-	}
+    make_path($options{outdir}."/idFiles");
+    make_path($options{outdir}."/xDocs");
 }
 
 #############################################################################

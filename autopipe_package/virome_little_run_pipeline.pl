@@ -78,7 +78,7 @@ use Pod::Usage;
 use Data::Dumper;
 use File::Basename;
 use FindBin;
-use File::Path;
+use File::Path qw(make_path remove_tree mkpath);
 use JSON qw(encode_json decode_json);
 use lib "$FindBin::Bin/../lib";
 use lib ("/var/www/html/cgi") ;
@@ -338,7 +338,8 @@ sub check_parameters {
 sub create_output_dir {
     my $dir = shift;
 
-    mkpath($dir.'/logs', 0, '0755');
+    #mkpath($dir.'/logs', 0, '0755');
+    make_path($dir.'/logs');
 }
 
 ###############################################################################

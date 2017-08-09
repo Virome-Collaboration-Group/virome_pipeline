@@ -3,13 +3,13 @@
 eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
-=head1  NAME 
+=head1  NAME
 
 archive_pipeline_to_location.pl - archive a workflow pipeline and, optionally, its output data
 
 =head1 SYNOPSIS
 
-USAGE: archive_pipeline_to_location.pl 
+USAGE: archive_pipeline_to_location.pl
         --pipeline_id=1234
         --repository_root=/usr/local/annotation/AA1
         --archive_root=/usr/local/scratch/ergatis/archival/AA1
@@ -20,34 +20,34 @@ USAGE: archive_pipeline_to_location.pl
 
 =head1 OPTIONS
 
-B<--pipeline_id,-i> 
+B<--pipeline_id,-i>
     the ID of the pipeline to archive
 
-B<--repository_root,-r> 
+B<--repository_root,-r>
     the project directory, just under which we should find the Workflow directory.
 
-B<--archive_root,-a> 
+B<--archive_root,-a>
     root of the directory where archivals will be stored.  it will be created if it
     doesn't exist, along with the necessary subdirectory structure.
 
-B<--lock_file,-k> 
+B<--lock_file,-k>
     optional.  This file will be created at the start of the run and will contain
     only the word "archiving".  Any existing file will get stomped.  It will be
     deleted once processing is finished.
 
-B<--archive_output,-o> 
+B<--archive_output,-o>
     optional.  If passed, the output in the standard output directory structure
     for this pipeline will also be compressed.
 
-B<--log,-l> 
+B<--log,-l>
     optional.  will create a log file with summaries of all actions performed.
 
-B<--help,-h> 
+B<--help,-h>
     This help message/documentation.
 
 =head1   DESCRIPTION
 
-This script is used to archive a pipeline and, optionally, all its associated output.  
+This script is used to archive a pipeline and, optionally, all its associated output.
 This is based on pipeline_id and repository root.  The contents of each the following
 folders will be compressed and migrated to the archive root as individual tarballs:
 
@@ -78,7 +78,7 @@ use IO::Handle;
 use Pod::Usage;
 
 my %options = ();
-my $results = GetOptions (\%options, 
+my $results = GetOptions (\%options,
 			  'pipeline_id|i=i',
               'repository_root|r=s',
               'archive_root|a=s',
@@ -109,7 +109,7 @@ if ( $options{lock_file} ) {
 my $logfh;
 if (defined $options{log}) {
     open($logfh, ">$options{log}") || die "can't create log file: $!";
-    
+
     ## i'm setting autoflush here so that logs are written immediately
     ##  i was getting terrible lag otherwise.
     autoflush $logfh 1;
@@ -122,7 +122,7 @@ opendir( my $wfdh, $wf_dir );
 _log("INFO: scanning $wf_dir");
 for my $component ( readdir $wfdh ) {
     _log("INFO: scanning $wf_dir/$component");
-    
+
     for my $rundir ( glob "$wf_dir/$component/$options{pipeline_id}_*" ) {
         &archive_to_location($rundir);
     }
@@ -156,24 +156,24 @@ exit(0);
 
 sub _log {
     my $msg = shift;
-    
+
     print $logfh "$msg\n" if $logfh;
 }
 
 sub check_parameters {
-    
+
     ## pipeline_id and repository_root are required
     unless ( defined $options{pipeline_id} && $options{repository_root} && $options{archive_root} ) {
         print STDERR "pipeline_id, repository_root and archive_root options are required\n\n";
         pod2usage( {-exitval=>1, -verbose => 2, -output => \*STDOUT} );
     }
-    
+
     ## make sure the repository root has a workflow directory
     unless ( -d "$options{repository_root}/workflow/runtime" ) {
         print STDERR "\n\nthe repository root passed doesn't contain a workflow/runtime directory.\n\n";
         exit(1);
     }
-    
+
     ## make sure the repository root has an output_repository directory
     unless ( -d "$options{repository_root}/output_repository" ) {
         print STDERR "\n\nthe repository root passed doesn't contain an output_repository directory.\n\n";
@@ -183,12 +183,12 @@ sub check_parameters {
 
 sub archive_to_location {
     my $source = shift;
-    
+
     ## take off any trailing / from the source
     if ( $source =~ m|(.+)/*$| ) {
         $source = $1;
     }
-    
+
     my $arch_dir = "$options{archive_root}/$source";
 
     $arch_dir =~ m|^(.+)/.+|;
@@ -197,9 +197,9 @@ sub archive_to_location {
     &create_directory($arch_pre_dir);
 
     _log("INFO: recursively archiving $source to $arch_dir.tar.gz");
-    
+
 #    _log("INFO: tar -czf $arch_dir.tar.gz $source");
-    
+
     my $ret = system("tar -czf $arch_dir.tar.gz $source");
 #    $ret >>= 8;
 #    if ( $ret ) {
@@ -212,12 +212,11 @@ sub archive_to_location {
 
 sub create_directory{
     my($dir) = @_;
-    
+
     _log("INFO: creating dir $dir");
     print "INFO: creating dir $dir\n";
-    
+
     my $ret = system("mkdir -m 777 -p $dir");
     $ret >>= 8;
     return $ret;
 }
-
