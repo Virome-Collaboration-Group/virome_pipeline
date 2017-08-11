@@ -90,25 +90,17 @@ if( $options{'help'} ){
 ## make sure everything passed was peachy
 &check_parameters(\%options);
 
-my $filename = fileparse($options{input}, qr/\.[^.]*/);
-my $dirname = $filename ."_". timestamp();
-my $outdir = "/opt/output/". $dirname;
-
-#### temp overwrite output dir with pstore location
-#### TODO: remove previous output dir assignments
-$outdir = $options{pstore};
-$dirname = fileparse($outdir, qr/\.[^.]*/);
+my $persistent_outdir = $options{pstore};
+my $dirname = fileparse($persistent_outdir, qr/\.[^.]*/);
 
 my $rindex = rindex($dirname, "_");
-$filename = substr($dirname, 0, $rindex);  #### remove timestamp
+my $filename = substr($dirname, 0, $rindex);  #### remove timestamp
 
 my $cmd = "";
 
-#### output dir should already be created at this time.
-#mkpath($outdir, 0, '0755');
-
-make_path($outdir."/idFiles");
-make_path($outdir."/xDocs");
+#### create idFiles and xDocs dir
+make_path($persistent_outdir."/idFiles");
+make_path($persistent_outdir."/xDocs");
 ###############################################################################
 $logger->info("Database dump for $filename started");
 
@@ -126,7 +118,7 @@ my @tables = ('blastp','blastn','sequence','statistics','sequence_relationship',
 foreach my $table (@tables) {
     print "Dumping table $table\n";
 
-    open(OUT, ">", "$outdir/${table}.dump.tbl") or $logger->logdie("Could not open file to write $outdir/${table}.dump.tbl");
+    open(OUT, ">", "$persistent_outdir/${table}.dump.tbl") or $logger->logdie("Could not open file to write $persistent_outdir/${table}.dump.tbl");
 
     print OUT "PRAGMA synchronous=OFF;\n";
     print OUT "PRAGMA count_changes=OFF;\n";
@@ -134,12 +126,12 @@ foreach my $table (@tables) {
     print OUT "PRAGMA temp_store=MEMORY;\n";
     print OUT ".separator \"\\t\"\n";
     print OUT ".headers on\n";
-    print OUT ".out $outdir/$table.tab\n";
+    print OUT ".out $persistent_outdir/$table.tab\n";
     print OUT "select * from $table;\n";
 
     close(OUT);
 
-    $cmd = "sqlite3 $options{database} < $outdir/${table}.dump.tbl";
+    $cmd = "sqlite3 $options{database} < $persistent_outdir/${table}.dump.tbl";
 
     system($cmd);
 
@@ -150,21 +142,21 @@ foreach my $table (@tables) {
     }
 
     #### add # to header of each table output
-    $cmd = "sed -i '1s/^/#/' $outdir/$table.tab";
+    $cmd = "sed -i '1s/^/#/' $persistent_outdir/$table.tab";
     system($cmd);
 }
 
-$cmd = "cp $options{output_dir}/xDocs/* $outdir/xDocs";
+$cmd = "cp $options{output_dir}/xDocs/* $persistent_outdir/xDocs";
 system($cmd);
 
-$cmd = "cp $options{output_dir}/idFiles/* $outdir/idFiles";
+$cmd = "cp $options{output_dir}/idFiles/* $persistent_outdir/idFiles";
 system($cmd);
 
 #####################################################################
 ## Print out the version control info to the version_info.txt file ##
 #####################################################################
 
-open(OUT, ">", "$outdir/version_info.txt") || die "\n Cannot open the file: $outdir/version_info.txt\n";
+open(OUT, ">", "$persistent_outdir/version_info.txt") || die "\n Cannot open the file: $persistent_outdir/version_info.txt\n";
 print OUT "fxndbLookupVersion=" . $options{uniref} . "\n";
 print OUT "mgolVersion=" . $options{mgol} . "\n";
 print OUT "pipelineVersion=" . $options{pipeline} . "\n";
@@ -173,27 +165,31 @@ print OUT "id=" . $library_id . "\n";
 close(OUT);
 
 #### remove all .tbl files
-$cmd = "rm -rf $outdir/*.dump.tbl";
+$cmd = "rm -rf $persistent_outdir/*.dump.tbl";
 system($cmd);
 
 #########################
 ## Create the Tar Ball ##
 #########################
-if (-e "$outdir.tar.gz" ) {
-    $cmd = "rm $outdir.tar.gz";
+#### persistent_outdir contatins full path plus dirname,
+#### final output is a tar file stored in persistent_outdir plus exe dir name
+#### and extention of .tar
+if (-e "$persistent_outdir.tar" ) {
+    $cmd = "rm $persistent_outdir.tar";
     system($cmd);
 }
 
 #### create tar without /opt/output in the path.
-$cmd = "tar -czvf $outdir.tar.gz -C /opt/output $dirname";
+$cmd = "tar --exclude=\"$persistent_outdir/logs\" --exclude=\"$persistent_outdir/processing.sqlite3\"";
+$cmd .= " -czvf $persistent_outdir.tar.gz -C /opt/output $dirname";
 system($cmd);
 
 #### get md5sum and touch a file with that name.
-my $md5sum = `md5sum $outdir.tar.gz`;
+my $md5sum = `md5sum $persistent_outdir.tar.gz`;
 chomp $md5sum;
 
 #### extract only the checksum
-$md5sum =~ s/ $outdir.tar.gz//;
+$md5sum =~ s/ $persistent_outdir.tar.gz//;
 
 #### trim any spaces there might be;
 $md5sum =~ s/^\s+//;
@@ -204,11 +200,11 @@ $cmd = "touch /opt/output/$md5sum";
 system($cmd);
 
 #### create a tarball for md5sum file and tar.gz file.
-$cmd = "tar -cvf $outdir.tar -C /opt/output $dirname.tar.gz $md5sum";
+$cmd = "tar -cvf $persistent_outdir.tar -C /opt/output $dirname.tar.gz $md5sum";
 system($cmd);
 
 #### remove unwanted files;
-$cmd = "rm -rf $outdir.tar.gz /opt/output/$md5sum $outdir";
+$cmd = "rm -rf $persistent_outdir.tar.gz /opt/output/$md5sum $persistent_outdir";
 system($cmd);
 
 $logger->info("Database dump for $filename completed");
