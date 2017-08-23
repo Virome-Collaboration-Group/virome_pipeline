@@ -50,21 +50,17 @@
             </commandSet>
         </commandSet>
 
-        <commandSet type="parallel">
+        <commandSet type="serial">
             <state>incomplete</state>
-            <commandSet type="serial">
-                <state>incomplete</state>
-                <name>sequence-prep.rna-clean</name>
-            </commandSet>
-            <commandSet type="serial">
-                <state>incomplete</state>
-                <name>sequence-prep.rna</name>
-            </commandSet>
+            <name>sequence-prep.rna-clean</name>
         </commandSet>
-
         <commandSet type="serial">
             <state>incomplete</state>
             <name>db-upload.sequence_read</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>sequence-prep.rna</name>
         </commandSet>
         <commandSet type="serial">
             <state>incomplete</state>
