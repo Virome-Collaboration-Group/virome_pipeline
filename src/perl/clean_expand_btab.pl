@@ -273,7 +273,6 @@ sub expand {
 
         ####split blast output.
         my @hsp = split(/\t/, $seqline);
-        #my $sequenceId = $sequenceLookup{$hsp[0]};
         my $sequenceId = $sequence_hash{$hsp[0]};
 
         #### re-arrange all element as expected by sqlite blastp table
@@ -532,7 +531,6 @@ sub modifyDescription {
     my $seqline = shift;
 
 	my @hsp = split(/\t/, $seqline);
-	#my $sequenceId = $sequenceLookup{$hsp[0]};
     my $sequenceId = $sequence_hash{$hsp[0]};
 	my $str = "";
 
@@ -578,7 +576,6 @@ sub blastn_expand {
     my $seqline = shift;
 
 	my @hsp = split(/\t/, $seqline);
-	#my $sequenceId = $sequenceLookup{$hsp[0]};
     my $sequenceId = $sequence_hash{$hsp[0]};
 	my $str = "";
 
