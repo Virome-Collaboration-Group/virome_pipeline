@@ -104,6 +104,7 @@ my $results = GetOptions (\%options,
                           'input|i=s',
                           'output_dir|o=s',
                           'database|b=s',
+                          'blastdb|t=s',
                           'log|l=s',
                           'debug|d=s',
                           'help|h') || pod2usage();
@@ -150,6 +151,12 @@ open (OUT, ">", $options{output_dir} . "/" . $filename .".btab") or $logger->log
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
 my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
+
+#### change blast db
+if ($options{blastdb} =~ /univec|rrna/i) {
+    $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastn');
+}
+
 $sth->execute;
 
 while ( my $result = $sth->fetchrow_hashref() ) {
@@ -224,6 +231,8 @@ sub check_parameters {
         pod2usage({-exitval => 2,  -message => "error message", -verbose => 1, -output => \*STDERR});
         $logger->logdie("No input defined, plesae read perldoc $0\n\n");
     }
+
+    $options{blastdb} = "uniref100p" unless (defined $options{blastdb});
 }
 
 ###############################################################################
