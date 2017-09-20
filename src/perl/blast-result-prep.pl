@@ -213,7 +213,7 @@ while (<DAT>) {
 close DAT;
 close OUT;
 
-$logger->info("BLAST RESULT PREP for $options{sample} complete");
+$logger->info("BLAST RESULT PREP complete");
 
 exit(0);
 

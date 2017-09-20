@@ -202,7 +202,7 @@ while (<BTAB>) {
 		print OUT modifyDescription($btabline) . "\n";
 	}
 	else {
-		print OUT $btabline . "\n";
+		print OUT blastn_expand($btabline) . "\n";
 	}
 }    ##END OF BTAB file
 
@@ -565,6 +565,58 @@ sub modifyDescription {
     push (@new, "BLASTP");    # algorithm added
     push (@new, $hsp[2]);     # database name
     push (@new, 10);          # db ranking system
+
+    push (@new, @hsp[3..$#hsp]);
+
+    @new = map {$utils->trim($_)} @new;
+
+	return join("\t", @new);
+}
+
+##############################################################################
+sub blastn_expand {
+    my $seqline = shift;
+
+	my @hsp = split(/\t/, $seqline);
+	#my $sequenceId = $sequenceLookup{$hsp[0]};
+    my $sequenceId = $sequence_hash{$hsp[0]};
+	my $str = "";
+
+    #### re-arrange all element as expected by sqlite blastp table
+    #### resulting array look like
+    ####
+    #### 0: sequenceId
+    #### 1: qname
+    #### 2: qlen
+    #### 3: algo
+    #### 4: dname
+    #### 5: db_ranking
+    #### 6: hname
+    #### 7: hdesc
+    #### 8: qstart
+    #### 9: qend
+    #### 10: hstart
+    #### 11: hend
+    #### 12: pident
+    #### 13: psim
+    #### 14: rscr
+    #### 15: bscr
+    #### 16: blast frame    # dummy place holder to delete later
+    #### 17: query strand   # dummy place holder to delete later
+    #### 18: slen
+    #### 19: eval
+
+    my @new = $sequenceId;    # sequenceid add to array
+    push (@new, @hsp[0..1]);  # query_name and query_length added
+    push (@new, "BLASTN");    # algorithm added
+    push (@new, $hsp[2]);     # database name
+
+    if ($hsp[2] =~ /univec/i) {
+        push (@new, 4);          # db ranking system
+    } else {
+        push (@new, 5);          # db ranking system
+    }
+
 
     push (@new, @hsp[3..$#hsp]);
 
