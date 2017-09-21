@@ -153,7 +153,7 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseEr
 my $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastp');
 
 #### change blast db
-if ($options{blastdb} =~ /univec|rrna/i) {
+if ($options{blastdb} =~ /univec|rna/i) {
     $sth = $dbh->prepare('SELECT max(id) as max_id FROM blastn');
 }
 
