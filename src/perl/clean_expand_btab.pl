@@ -159,8 +159,17 @@ my @phgseedarray = ();
 #### database connection
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1 }) or $logger->logdie($DBI::errstr);
 
-my $sth = $dbh->prepare('SELECT id,name FROM sequence WHERE 1');
-$sth->execute;
+my $sth = $dbh->prepare('SELECT id,name FROM sequence WHERE typeId=?');
+
+#### if blast against uniref or mgol then sequenceId lookup to orf aa
+#### hence typeId=3 else if blast against univec or rna
+#### then sequenceId lookup to read ids hence typeId=1
+
+if ($options{subjectDB} =~ /^(uniref100p|metagenomes)$/i) {
+    $sth->execute(3);
+} else {
+    $sth->execute(1);
+}
 
 my %sequence_hash;
 while ( my $result = $sth->fetchrow_hashref() ) {
