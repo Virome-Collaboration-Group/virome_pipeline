@@ -248,10 +248,10 @@ $pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sql
 $pstore_config->RewriteConfig();
 
 #### db-to-lookup sqlite3 locaiton
-$pstore_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-to-lookup/" . $pipeline->id . "_sequence/db-to-lookup.sequence.user.config");
-$pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
-$pstore_config->RewriteConfig();
+#$pstore_config = new Ergatis::ConfigFile(
+#    -file => "$options{repository_root}/workflow/runtime/db-to-lookup/" . $pipeline->id . "_sequence/db-to-lookup.sequence.user.config");
+#$pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
+#$pstore_config->RewriteConfig();
 
 
 #### fxnal database lookup file
