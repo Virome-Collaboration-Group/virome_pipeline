@@ -370,6 +370,17 @@ $dbh->do( "CREATE TABLE `mgol_library` (
 	`deleted` tinyint(1)
 );");
 
+open(OUT, ">", $options{pstore}."/mgol.sql") or $logger->logdie("Could not open file to write $options{pstore}/mgol.sql");
+print OUT ".separator \"\\t\"\n";
+print OUT ".import /opt/ergatis/autopipe_package/mgol_table.tab mgol_library";
+
+close(OUT);
+
+$cmd = "sqlite3 $options{pstore}/processing.sqlite3";
+$cmd .= " < $this->{output_dir}/mgol.sql";
+
+system($cmd);
+
 $logger->info("init database for complete");
 exit(0);
 
