@@ -376,7 +376,7 @@ print OUT ".import /opt/ergatis/autopipe_package/mgol_table.tab mgol_library";
 
 close(OUT);
 
-$cmd = "sqlite3 $options{pstore}/processing.sqlite3";
+my $cmd = "sqlite3 $options{pstore}/processing.sqlite3";
 $cmd .= " < $this->{output_dir}/mgol.sql";
 
 system($cmd);
