@@ -82,6 +82,10 @@ if( $options{'help'} ){
 
 ###############################################################################
 
+my $storage = `df -h`;
+print STDERR $storage;
+print $storage;
+
 ## Init the SQLite database file
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{pstore}/processing.sqlite3", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
