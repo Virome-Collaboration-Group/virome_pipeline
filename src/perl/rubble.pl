@@ -242,6 +242,7 @@ close(OUT);
 ## 4. Final BLAST using the restriction list ##
 ###############################################
 my $blast_exe = "blastp -query " . "$working_dir/1-cull/query_cull.fasta" . " -db " . $db . " -out " . $out . " -evalue " . $evalue . " -outfmt \"6 qseqid qlen sseqid salltitles qstart qend sstart send pident ppos score bitscore slen evalue\"" . " -seqidlist " . "$working_dir/2-restrict/restrict.txt" . " -dbsize " . $residues . " -max_target_seqs " . $max_target_seqs . " -num_threads " . $threads;
+print STDOUT "INFO: BLAST command being executed in final step\n". $blast_exe;
 print `$blast_exe`;
 
 
