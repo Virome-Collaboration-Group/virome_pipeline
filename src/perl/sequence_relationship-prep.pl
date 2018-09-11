@@ -91,7 +91,7 @@ open (OUT, ">", $options{output}) || die $logger->logdie("Could not open file $o
 #init db connection
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{input}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
-my $sel_qry = qq|SELECT id,name FROM sequence WHERE deleted=0 and libraryId=? and typeId=?|;
+my $sel_qry = qq|SELECT id,name FROM sequence WHERE libraryId=? and typeId=?|;
 
 #setup hashes
 my %orf_hash;

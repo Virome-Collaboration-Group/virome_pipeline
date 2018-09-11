@@ -95,7 +95,6 @@ my $orf_sel = $dbh->prepare(q{SELECT s.size*3 as hval
 									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
 								and sr.typeId = 3
-								and s.deleted = 0
 							  ORDER BY hval desc});
 
 my $read_sel = $dbh->prepare(q{SELECT s.size as hval
@@ -104,7 +103,6 @@ my $read_sel = $dbh->prepare(q{SELECT s.size as hval
 									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
 								and sr.typeId = 1
-								and s.deleted = 0
 							  ORDER BY hval desc});
 
 my $gc_sel = $dbh->prepare(q{SELECT s.gc as hval
@@ -113,7 +111,6 @@ my $gc_sel = $dbh->prepare(q{SELECT s.gc as hval
 									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
 								and sr.typeId = 1
-								and s.deleted = 0
 							  ORDER BY hval desc});
 my $rslt;
 

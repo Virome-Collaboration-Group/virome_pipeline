@@ -103,9 +103,7 @@ my $tax_sel = $dbh->prepare(q{SELECT	b.domain,
 				FROM	blastp b
 				    LEFT JOIN
 					sequence s on s.id=b.sequenceId
-				WHERE	b.deleted=0
-					and s.deleted=0
-					and b.sys_topHit=1
+				WHERE	b.sys_topHit=1
 					and b.e_value <= 0.001
 					and b.database_name = 'UNIREF100P'
 					and s.libraryId = ?

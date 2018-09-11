@@ -96,13 +96,12 @@ $utils->set_db_params( $options{env} );
 ##############################################################################
 timer();
 
-my $lib_sel = $dbh0->prepare(q{SELECT id FROM library WHERE deleted=0 and server=?});
+my $lib_sel = $dbh0->prepare(q{SELECT id FROM library WHERE server=?});
 my $seq_info = $dbh->prepare(qq{SELECT name,size,id FROM sequence where id=?});
 
 my $get_orfans = $dbh->prepare(qq{SELECT orfan_id
 								  FROM statistics
-								  WHERE libraryId=?
-                                    and deleted=0}
+								  WHERE libraryId=?}
 );
 
 my $filename    = $options{outdir} . "/blastp.txt";

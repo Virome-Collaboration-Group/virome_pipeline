@@ -149,8 +149,6 @@ my $tax = $dbh->prepare(qq{SELECT b.domain, count(b.domain)
 		       WHERE s.libraryId = ?
 				  and b.e_value <= 0.001
 				  and b.database_name LIKE 'UNIREF100P'
-				  and b.deleted=0
-				  and s.deleted=0
 				  and b.sys_topHit = 1
 		       GROUP BY b.domain ORDER BY b.domain desc });
 
@@ -159,7 +157,6 @@ my $all_seq = $dbh->prepare(qq{SELECT distinct s.id,s.header,s.size,s.basepair
 			   FROM sequence s
 				INNER JOIN sequence_relationship sr on s.id = sr.objectId
 			   WHERE s.libraryId=?
-				 and s.deleted=0
 			     and sr.typeId=3 });
 
 ####get all sig orf hits
@@ -171,16 +168,13 @@ my $sig_seq = $dbh->prepare(qq{SELECT distinct s.id, s.header, s.size
 			    and b.e_value <= 0.001
 			    and sr.typeId = 3
 			    and (b.database_name like 'UNIREF100P' OR
-					 b.database_name like 'METAGENOMES')
-			    and b.deleted=0
-			    and s.deleted=0 });
+					 b.database_name like 'METAGENOMES') });
 
 ####get all reads
 my $read = $dbh->prepare(qq{SELECT count(s.id), sum(s.size)
 			FROM sequence s
 			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
 			WHERE s.libraryId=?
-			  and s.deleted=0
 			  and sr.typeId=1});
 
 ####get all tRNA
@@ -189,7 +183,6 @@ my $tRNA = $dbh->prepare(qq{SELECT t.sequenceId
 			  INNER JOIN sequence s on t.sequenceId = s.id
 			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
 			WHERE s.libraryId=?
-			  and s.deleted=0
 			  and sr.typeId=1});
 
 ####get all rRNA
@@ -197,7 +190,6 @@ my $rRNA = $dbh->prepare(qq{SELECT s.id
 			FROM sequence s
 			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
 			WHERE s.libraryId=?
-			  and s.deleted=0
 			  and sr.typeId=2});
 
 #### get all top blast hits for a given library
@@ -208,8 +200,6 @@ my $top_hits_stmt = qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking
 							and 	(b.database_name = 'UNIREF100P'
 								  OR b.database_name = 'METAGENOMES')
 							and 	b.sys_topHit=1
-							and  s.deleted=0
-							and  b.deleted=0
 						   GROUP BY b.sequenceId
 						   ORDER BY b.sequenceId, db_ranking_code desc};
 
@@ -292,7 +282,6 @@ foreach my $seqid (@meta_arr) {
 				FROM blastp b
 				WHERE b.sequenceId=?
 					and b.e_value<=0.001
-					and b.deleted=0
 					and b.database_name='METAGENOMES'
 				ORDER BY b.id,b.sys_topHit});
 	$sth->execute(($seqid));

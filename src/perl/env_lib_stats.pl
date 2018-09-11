@@ -417,7 +417,7 @@ sub bestEvalue {
                                    		mgol_library m on substr(b.hit_name,1,3)=m.lib_prefix
                                    WHERE b.sequenceId = $sequenceId
                                    	and b.database_name='METAGENOMES'
-                                    and substr(hit_name,1,3) not like substr('$query_name',1,3)
+                                    and substr(b.hit_name,1,3) not like substr('$query_name',1,3)
                                     and b.e_value <= 0.001
                                    GROUP BY field, m.lib_prefix
                                    ORDER BY e_value}

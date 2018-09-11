@@ -96,7 +96,6 @@ my $blst_sel = $dbh->prepare(q{SELECT DISTINCT b.sequenceId
 						and s.libraryId=?
 						and b.database_name = ?
 						and b.fxn_topHit=1
-					and b.deleted=0 and s.deleted=0
 			       ORDER BY sequenceId});
 
 my $xml_file = "FXNAL_OVERVIEW_XMLDOC_".$libId.".xml";

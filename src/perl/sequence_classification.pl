@@ -104,8 +104,7 @@ my $stat_sel = $dbh->prepare(q{SELECT	s.read_cnt,s.read_mb,s.complete_cnt,
 					s.unassignfxn_cnt,s.unassignfxn_id,
 					s.libraryId
 				FROM	statistics s
-				WHERE	s.deleted = 0
-					and s.libraryId = ?});
+				WHERE	s.libraryId = ?});
 
 my $mgol_sel = $dbh->prepare(q{SELECT	distinct (b.sequenceId), b.hit_name
 				FROM	blastp b
@@ -113,8 +112,6 @@ my $mgol_sel = $dbh->prepare(q{SELECT	distinct (b.sequenceId), b.hit_name
 					sequence s on s.id=b.sequenceId
 				WHERE	b.e_value < 0.001
 					and s.libraryId = ?
-					and b.deleted = 0
-					and s.deleted = 0
 					and b.sys_topHit=1
 					and b.database_name = 'METAGENOMES'
 				ORDER BY b.sequenceId, b.hit_name});
