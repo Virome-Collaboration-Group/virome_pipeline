@@ -130,10 +130,10 @@ $dbh->do( "CREATE TABLE `blastp` (
 $dbh->do( "CREATE INDEX blastp_query_name ON blastp(`query_name`);" );
 $dbh->do( "CREATE INDEX blastp_e_value ON blastp(`e_value`);" );
 $dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`sequenceId`);" );
-$dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`database_name`);" );
-$dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`sys_topHit`);" );
-$dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`fxn_topHit`);" );
-v$dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`hit_name`);" );
+$dbh->do( "CREATE INDEX blastp_databasename ON blastp(`database_name`);" );
+$dbh->do( "CREATE INDEX blastp_sysTopHit ON blastp(`sys_topHit`);" );
+$dbh->do( "CREATE INDEX blastp_fxnTopHit ON blastp(`fxn_topHit`);" );
+v$dbh->do( "CREATE INDEX blastp_hitName ON blastp(`hit_name`);" );
 #$dbh->do( "CREATE INDEX blastp_query_name ON blastp(query_name,e_value);" );
 #$dbh->do( "CREATE INDEX blastp_domain ON blastp(`domain`,`deleted`,`e_value`);" );
 #$dbh->do( "CREATE INDEX blastp_kingdom ON blastp(`kingdom`,`deleted`,`e_value`);" );
@@ -185,25 +185,25 @@ $dbh->do( "CREATE TABLE `blastn` (
   `dateModified` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   `deleted` tinyint(1) NOT NULL DEFAULT '0'
   );");
-  $dbh->do( "CREATE INDEX blastp_query_name ON blastn(`query_name`);" );
-  $dbh->do( "CREATE INDEX blastp_e_value ON blastn(`e_value`);" );
-  $dbh->do( "CREATE INDEX blastp_sequenceId ON blastn(`sequenceId`);" );
-  $dbh->do( "CREATE INDEX blastp_sequenceId ON blastn(`database_name`);" );
-  $dbh->do( "CREATE INDEX blastp_sequenceId ON blastn(`sys_topHit`);" );
-  $dbh->do( "CREATE INDEX blastp_sequenceId ON blastn(`fxn_topHit`);" );
-  v$dbh->do( "CREATE INDEX blastp_sequenceId ON blastn(`hit_name`);" );
-  #$dbh->do( "CREATE INDEX blastp_query_name ON blastn(query_name,e_value);" );
-  #$dbh->do( "CREATE INDEX blastp_domain ON blastn(`domain`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_kingdom ON blastn(`kingdom`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_phylum ON blastn(`phylum`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_class ON blastn(`class`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX `blastp_order` ON blastn(`order`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_family ON blastn(`family`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_genus ON blastn(`genus`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_species ON blastn(`species`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_organism ON blastn(`organism`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_hit_description ON blastn(`hit_description`,`deleted`,`e_value`);" );
-  #$dbh->do( "CREATE INDEX blastp_qn_hn ON blastn(`query_name`,`hit_name`,`qry_start`,`hit_start`);" );
+  $dbh->do( "CREATE INDEX blastn_query_name ON blastn(`query_name`);" );
+  $dbh->do( "CREATE INDEX blastn_e_value ON blastn(`e_value`);" );
+  $dbh->do( "CREATE INDEX blastn_sequenceId ON blastn(`sequenceId`);" );
+  $dbh->do( "CREATE INDEX blastn_databasename ON blastn(`database_name`);" );
+  $dbh->do( "CREATE INDEX blastn_sysTopHit ON blastn(`sys_topHit`);" );
+  $dbh->do( "CREATE INDEX blastn_fxnTopHit ON blastn(`fxn_topHit`);" );
+  v$dbh->do( "CREATE INDEX blastn_hitname ON blastn(`hit_name`);" );
+  #$dbh->do( "CREATE INDEX blastn_query_name ON blastn(query_name,e_value);" );
+  #$dbh->do( "CREATE INDEX blastn_domain ON blastn(`domain`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_kingdom ON blastn(`kingdom`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_phylum ON blastn(`phylum`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_class ON blastn(`class`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_order ON blastn(`order`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_family ON blastn(`family`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_genus ON blastn(`genus`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_species ON blastn(`species`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_organism ON blastn(`organism`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_hit_description ON blastn(`hit_description`,`deleted`,`e_value`);" );
+  #$dbh->do( "CREATE INDEX blastn_qn_hn ON blastn(`query_name`,`hit_name`,`qry_start`,`hit_start`);" );
 
 
 ## Create table sequence
