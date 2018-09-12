@@ -133,7 +133,7 @@ $dbh->do( "CREATE INDEX blastp_sequenceId ON blastp(`sequenceId`);" );
 $dbh->do( "CREATE INDEX blastp_databasename ON blastp(`database_name`);" );
 $dbh->do( "CREATE INDEX blastp_sysTopHit ON blastp(`sys_topHit`);" );
 $dbh->do( "CREATE INDEX blastp_fxnTopHit ON blastp(`fxn_topHit`);" );
-v$dbh->do( "CREATE INDEX blastp_hitName ON blastp(`hit_name`);" );
+$dbh->do( "CREATE INDEX blastp_hitName ON blastp(`hit_name`);" );
 #$dbh->do( "CREATE INDEX blastp_query_name ON blastp(query_name,e_value);" );
 #$dbh->do( "CREATE INDEX blastp_domain ON blastp(`domain`,`deleted`,`e_value`);" );
 #$dbh->do( "CREATE INDEX blastp_kingdom ON blastp(`kingdom`,`deleted`,`e_value`);" );
