@@ -98,7 +98,7 @@ open(OUT, ">", "$options{output_dir}/$options{table}") or $logger->logdie("Could
 
 print OUT "PRAGMA synchronous=OFF;\n";
 print OUT "PRAGMA count_changes=OFF;\n";
-print OUT "PRAGMA journal_mode=MEMORY;\n";
+print OUT "PRAGMA journal_mode=OFF;\n";
 print OUT "PRAGMA temp_store=MEMORY;\n";
 print OUT ".separator \"\\t\"\n";
 print OUT ".import $options{input} $options{table}\n";
