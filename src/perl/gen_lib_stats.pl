@@ -226,7 +226,7 @@ $top_hits_qry->execute($libId);
 #### full all records for top_hits_qry instead of prcessing one row at a time
 #### could help with performance as all data will be read in memory,
 #### and processed in memory.
-my $result = $top_hit_qry->fetchall_arrayref( {} );
+my $result = $top_hits_qry->fetchall_arrayref( {} );
 
 ########################################
 # SPLIT SEQUENCE INTO UNIREF100P ONLY
