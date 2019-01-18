@@ -574,8 +574,6 @@ my %rRNA_s = ();
 $rRNA_s{'count'} = 0;
 $rRNA_s{'lst'}   = "";
 
-$result = $tRNA->fetchall_arrayref();
-
 while ( my @rslt = $rRNA->fetchrow_array() ) {
     $rRNA_s{'count'}++;
     if ( length( $rRNA_s{'lst'} ) ) {
