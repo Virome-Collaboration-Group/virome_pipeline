@@ -551,7 +551,7 @@ my %tRNA_s = ();
 $tRNA_s{'count'} = 0;
 $tRNA_s{'lst'}   = "";
 
-$result = $tRNA->fetchall_arrayref();
+$result = $tRNA->fetchall_arrayref({});
 
 foreach my $rslt ( @{$result} ) {
     if ( length( $tRNA_s{'lst'} ) ) {
