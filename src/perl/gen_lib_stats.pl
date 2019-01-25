@@ -104,6 +104,8 @@ my $dbh = DBI->connect( "dbi:SQLite:dbname=$options{input}",
 ##########################################################################
 timer();    #call timer to see when process ended.
 
+print STDOUT "Setup all SQL queries\n";
+
 my $inst_fxn = $dbh->prepare(
     qq{INSERT INTO statistics (id, libraryId,
 							 read_cnt, read_mb,
@@ -210,18 +212,32 @@ my $rRNA = $dbh->prepare(
 #### get all top blast hits for a given library
 my $top_hits_stmt =
   qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking_code
-						   FROM blastp b INNER JOIN sequence s ON s.id=b.sequenceId
-						   WHERE s.libraryId = ?
-							and 	b.e_value <= 0.001
-							and 	(b.database_name = 'UNIREF100P'
-								  OR b.database_name = 'METAGENOMES')
-							and 	b.sys_topHit=1
-						   GROUP BY b.sequenceId
-						   ORDER BY b.sequenceId, db_ranking_code desc};
+                        FROM blastp b
+                        WHERE b.e_value <= 0.001
+                         and 	(b.database_name = 'UNIREF100P'
+                               OR b.database_name = 'METAGENOMES')
+                         and 	b.sys_topHit=1
+                        GROUP BY b.sequenceId
+                        ORDER BY b.sequenceId, db_ranking_code desc};
 
+                        # qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking_code
+                      	# 					   FROM blastp b INNER JOIN sequence s ON s.id=b.sequenceId
+                      	# 					   WHERE s.libraryId = ?
+                      	# 						and 	b.e_value <= 0.001
+                      	# 						and 	(b.database_name = 'UNIREF100P'
+                      	# 							  OR b.database_name = 'METAGENOMES')
+                      	# 						and 	b.sys_topHit=1
+                      	# 					   GROUP BY b.sequenceId
+                      	# 					   ORDER BY b.sequenceId, db_ranking_code desc};
+
+print STDOUT "Start GenLibStats\n";
+
+print STDOUT "Read sequence table\n";
 my $libId        = 1;
 my $top_hits_qry = $dbh->prepare($top_hits_stmt);
 $top_hits_qry->execute($libId);
+
+print STDOUT "Read all blast tophit results for UNIREF and MGOL\n";
 
 #### full all records for top_hits_qry instead of prcessing one row at a time
 #### could help with performance as all data will be read in memory,
@@ -313,10 +329,12 @@ $env{'viral_list'}     = "";
 $env{'micro'}          = 0;
 $env{'micro_list'}     = "";
 
+print STDOUT "Get all viral, microbial list\n";
+
 foreach my $seqid (@meta_arr) {
     #### get all blast hits for a seq.
     my $sth = $dbh->prepare(
-qq{SELECT b.id, b.hit_name, b.sys_topHit, b.query_name, b.hit_description
+            qq{SELECT b.id, b.hit_name, b.sys_topHit, b.query_name, b.hit_description
 				FROM blastp b
 				WHERE b.sequenceId=?
 					and b.e_value<=0.001
@@ -390,6 +408,8 @@ $tax->bind_col( 1, \$type );
 $tax->bind_col( 2, \$count );
 $lineage = "";
 
+print STDOUT "Get Taxonomy lineage\n";
+
 while ( $tax->fetch ) {
     if ( !length($type) ) {
         $type = "Unclassified";
@@ -426,6 +446,8 @@ $orf{'archaea_mb'}   = 0;
 $orf{'phage_cnt'}    = 0;
 $orf{'phage_lst'}    = "";
 $orf{'phage_mb'}     = 0;
+
+print STDOUT "Get ORF count and ORF type list\n";
 
 $all_seq->execute( ($libId) );
 $result = $all_seq->fetchall_arrayref( {} );
@@ -498,6 +520,8 @@ $result = undef;
 my $sigcnt = 0;
 my $siglst = "";
 
+print STDOUT "Get ORFan count\n";
+
 $sig_seq->execute( ($libId) );
 $result = $sig_seq->fetchall_arrayref( {} );
 
@@ -538,8 +562,12 @@ foreach my $val ( @{$result} ) {
 #### GET READ COUNT AND MEGABASES
 ##################################################
 $read->execute( ($libId) );
+
+print STDOUT "Get read count\n";
+
 my $read_row = $read->fetchall_arrayref( [], 1 );
 my %read_s = ();
+
 $read_s{'count'} = $read_row->[0]->[0];
 $read_s{'mb'}    = $read_row->[0]->[1];
 
@@ -550,6 +578,8 @@ $tRNA->execute( ($libId) );
 my %tRNA_s = ();
 $tRNA_s{'count'} = 0;
 $tRNA_s{'lst'}   = "";
+
+print STDOUT "Get tRNA count\n";
 
 $result = $tRNA->fetchall_arrayref({});
 
@@ -573,6 +603,8 @@ $rRNA->execute( ($libId) );
 my %rRNA_s = ();
 $rRNA_s{'count'} = 0;
 $rRNA_s{'lst'}   = "";
+
+print STDOUT "Get rRNA count\n";
 
 while ( my @rslt = $rRNA->fetchrow_array() ) {
     $rRNA_s{'count'}++;
@@ -607,6 +639,8 @@ my %file_output_list = (
     "tRNA"              => $output_dir . "/tRNAList_" . $libId . ".txt",
     "rRNA"              => $output_dir . "/rRNAList_" . $libId . ".txt"
 );
+
+print STDOUT "Insert data into stats table\n";
 
 foreach my $key ( keys %file_output_list ) {
 
