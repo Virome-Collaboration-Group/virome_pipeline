@@ -235,7 +235,8 @@ print STDOUT "Start GenLibStats\n";
 print STDOUT "Read sequence table\n";
 my $libId        = 1;
 my $top_hits_qry = $dbh->prepare($top_hits_stmt);
-$top_hits_qry->execute($libId);
+#$top_hits_qry->execute($libId);
+$top_hits_qry->execute();
 
 print STDOUT "Read all blast tophit results for UNIREF and MGOL\n";
 
