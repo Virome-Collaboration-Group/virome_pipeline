@@ -151,9 +151,7 @@ my $inst_fxn = $dbh->prepare(qq{INSERT INTO statistics (id, libraryId,
 ####get taxonomy
 my $tax = $dbh->prepare(qq{SELECT b.domain, count(b.domain)
 		       FROM blastp b
-				INNER JOIN sequence s on s.id = b.sequenceId
-		       WHERE s.libraryId = ?
-				  and b.e_value <= 0.001
+		       WHERE b.e_value <= 0.001
 				  and b.database_name LIKE 'UNIREF100P'
 				  and b.sys_topHit = 1
 		       GROUP BY b.domain ORDER BY b.domain desc });
@@ -161,8 +159,7 @@ my $tax = $dbh->prepare(qq{SELECT b.domain, count(b.domain)
 ####get all orf sequences
 my $all_seq = $dbh->prepare(qq{SELECT distinct s.id,s.header,s.size,s.basepair
 			   FROM sequence s
-				INNER JOIN sequence_relationship sr on s.id = sr.objectId
-			   WHERE sr.typeId=3 });
+			   WHERE s.typeId=3 });
 
 ####get all sig orf hits
 my $sig_seq = $dbh->prepare(qq{SELECT distinct b.sequenceId
@@ -172,24 +169,18 @@ my $sig_seq = $dbh->prepare(qq{SELECT distinct b.sequenceId
 ####get all reads
 my $read = $dbh->prepare(qq{SELECT count(s.id), sum(s.size)
 			FROM sequence s
-			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
-			WHERE s.libraryId=?
-			  and sr.typeId=1});
+			WHERE s.typeId=1});
 
 ####get all tRNA
 my $tRNA = $dbh->prepare(qq{SELECT t.sequenceId
 			FROM tRNA t
 			  INNER JOIN sequence s on t.sequenceId = s.id
-			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
-			WHERE s.libraryId=?
-			  and sr.typeId=1});
+			WHERE s.typeId=1});
 
 ####get all rRNA
 my $rRNA = $dbh->prepare(qq{SELECT s.id
 			FROM sequence s
-			  INNER JOIN sequence_relationship sr on s.id = sr.objectId
-			WHERE s.libraryId=?
-			  and sr.typeId=2});
+			WHERE s.typeId=2});
 
 #### get all top blast hits for a given library
 my $top_hits_stmt = qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking_code, b.fxn_topHit
@@ -198,7 +189,7 @@ my $top_hits_stmt = qq{SELECT b.sequenceId, MAX(b.db_ranking_code) AS db_ranking
 							and 	(b.database_name = 'UNIREF100P'
 								  OR b.database_name = 'METAGENOMES')
 							and 	b.sys_topHit=1
-						   GROUP BY b.sequenceId
+                           GROUP BY b.sequenceId
 						   ORDER BY b.sequenceId, db_ranking_code desc};
 
 print "DEBUG: Get library in using top_hits_stmt\n";
@@ -218,51 +209,39 @@ $top_hits_qry->execute();
 # db_ranking_code 10=UNIREF100P
 #				  10=METAGENOMES
 #
-print STDOUT "DEBUG: Separeate uniref and metagenome hits\n";
+
+#### We can afford to get all data from using using fetchall_hashref('id')
+#### because for a given sequence Id we only one record returned
+#### if a sequece has a hit to UNIREF record then classify sequence in
+#### functional or unclassified functional category, other it will
+#### have a metagenome hit.
+
+print STDOUT "DEBUG: Read all top_hits in results hash ref\n";
 timer();
 
-my(@uniref_arr, @meta_arr);
-my $prev = -1;
+my $result = $top_hits_qry->fetchall_hashref('sequenceId');
 
-while (my $result = $top_hits_qry->fetchrow_hashref()) {
-	if ($$result{db_ranking_code} == 100) {
-		push @uniref_arr, {seqId=>$result->{sequenceId}, fxn=>$result->{fxn_topHit}};
+#### all uniref hits are further divided based on fxnal flag into
+#### fxnal_hash or unclassified_hash
+my %meta_hash;
+my %fxnal_hash;
+my %unclassified_hash;
+my %orfan_hash;
+
+print STDOUT "DEBUG: Separeate uniref (fxnal and unclassified) and metagenome hits\n";
+timer();
+
+foreach my $k (keys %{$result}) {
+	if ($result->{$k}->{db_ranking_code} == 100) {
+        if ($result->{$k}->{fxn}) {
+            $fxnal_hash{$k} = $result->{$k};
+        } else {
+            $unclassified_hash{$k} = $result->{$k};
+        }
 	} else {
-		push @meta_arr , $$result{sequenceId};
+		$meta_hash{$k} = $result->{$k};
 	}
 }
-
-###########################################
-# GET FUNCTIONAL AND UNASSIGNED FUNCTIONAL
-# CATEGORIES FOR ALL UNIREF100P SEQUENCES
-# AT EVALUE CUTOFF OF 0.001
-###########################################
-
-# for all uniref only sequences get functional/unassigned protein info.
-my $functional_count = 0;
-my $functional_list = "";
-my $unclassified_count = 0;
-my $unclassified_list = "";
-my $null_str = "NULL";
-
-print STDOUT "DEBUG: check if fxnal hit per uniref record\n";
-print "DEBUG: number of records to process  ". $#uniref_arr ."\n";
-timer();
-
-foreach my $sequence(@uniref_arr) {
-	 #divide all hits in fxn and unclassified.
-	 if ($sequence->{fxn}){
-		 $functional_count++;
-		 $functional_list .= $sequence->{seqId} . ",";
-	 } else {
-		 $unclassified_count++;
-		 $unclassified_list .= $sequence->{seqId} . ",";
-	 }
- }
-
-#remove last comma
-$functional_list =~ s/,$//;
-$unclassified_list =~ s/,$//;
 
 ###############################################
 # CALCULATE ENVIRONMENTAL CATEGORIES FOR
@@ -283,7 +262,7 @@ $env{'micro_list'}="";
 print "DEBUG: Gen env info such as top_viral, top_micro etc\n";
 timer();
 
-foreach my $seqid (@meta_arr) {
+foreach my $seqid (keys %meta_hash) {
 	#### get all blast hits for a seq.
 	my $sth = $dbh->prepare(qq{SELECT b.id, b.hit_name, b.sys_topHit, b.query_name, b.hit_description
 				FROM blastp b
@@ -342,7 +321,7 @@ foreach my $seqid (@meta_arr) {
  #################################################
  #### get domain taxonomy count.
  my ($type,$count,$lineage);
- $tax->execute(($libId));
+ $tax->execute();
  $tax->bind_col(1,\$type);
  $tax->bind_col(2,\$count);
  $lineage = "";
@@ -387,15 +366,16 @@ timer();
  $orf{'phage_lst'}="";
  $orf{'phage_mb'}=0;
 
-print "DEBUG: get complete, incomplete and other orf types\n";
+print "DEBUG: get complete, incomplete and other orf types including orfans\n";
 timer();
 
+$all_seq->execute();
+my $all_seq_hash = $all_seq->fetchall_hashref('id');
 
- $all_seq->execute();
- while (my $row = $all_seq->fetchrow_hashref) {
-	my %opts;
+foreach my $k (keys %{$all_seq_hash}) {
+    my %opts;
 
-	map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $$row{header});
+	map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $all_seq_hash->{$k}->{header});
 
 	if ($opts{type} =~ /lack[_|\s]stop/i){
 		$opts{type} = "stop";
@@ -411,65 +391,37 @@ timer();
 	$orf{$opts{model}.'_cnt'}++;
 
 	#if * at the end of bases, don't count it
-	if ($$row{basepair} =~ /\*$/) {
-		$orf{$opts{model}.'_mb'} += ($$row{size}-1);
+	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
+		$orf{$opts{model}.'_mb'} += ($all_seq_hash->{$k}->{size}-1);
 	} else {
-		$orf{$opts{model}.'_mb'} += $$row{size};
+		$orf{$opts{model}.'_mb'} += $all_seq_hash->{$k}->{size};
 	}
 
 	if (length($orf{$opts{model}.'_lst'})) {
-		$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $$row{id};
-	} else { $orf{$opts{model}.'_lst'} = $$row{id}; }
+		$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
+	} else { $orf{$opts{model}.'_lst'} = $all_seq_hash->{$k}->{id}; }
 
 	#### set type stats.
 	$orf{$opts{type}.'_cnt'}++;
 
 	####do not count * in bases
-	if ($$row{basepair} =~ /\*$/) {
-		$orf{$opts{type}.'_mb'} += ($$row{size} - 1);
-	} else { $orf{$opts{type}.'_mb'} += $$row{size}; }
+	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
+		$orf{$opts{type}.'_mb'} += ($all_seq_hash->{$k}->{size} - 1);
+	} else { $orf{$opts{type}.'_mb'} += $all_seq_hash->{$k}->{size}; }
 
 	if (length($orf{$opts{type}.'_lst'})) {
-		$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $$row{id};
-	} else { $orf{$opts{type}.'_lst'} = $$row{id}; }
-}
+		$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
+	} else { $orf{$opts{type}.'_lst'} = $all_seq_hash->{$k}->{id}; }
 
-##################################################
-#### GET ORFAN COUNT AT EVALUE CUTOFF OF 0.001
-##################################################
-my $sigcnt = 0;
-my $siglst = "";
+    #### generate orfan list by comparing all uniref/metagenome sequences that have
+    #### a blast hit that is significant that e_value < 0.001 if no such seq exist in
+    #### blastp table then classify the sequence as orfan.
 
-print "DEBUG: get orfan\n";
-timer();
-
-$sig_seq->execute();
-my $rslt = $sig_seq->fetchall_arrayref({});
-
-foreach my $val (@$rslt) {
-	$sigcnt ++;
-	#### get all significant hit ids.
-	if (length($siglst)) {
-		$siglst .= "," . $val->{sequenceId};
-	} else { $siglst = $val->{sequenceId}; }
-}
-
-$all_seq->execute();
-$rslt = $all_seq->fetchall_arrayref({});
-my $allcount = 0;
-my %orfan=();
-$orfan{'count'}=0;
-$orfan{'lst'}="";
-
-foreach my $val (@$rslt) {
-	$allcount++;
-	if (index($siglst, $val->{id}) < 0) {
-		$orfan{'count'}++;
-
-		if (length($orfan{'lst'})) {
-			$orfan{'lst'} .= "," . $val->{id};
-		} else { $orfan{'lst'} = $val->{id}; }
-	}
+    #### if sequence id does not exists in meta_hash, fxnal_hash or unclassified_hash
+    #### then seq is an orfan
+    unless ((exists $meta_hash{$k}) or (exists $fxnal_hash{$k}) or (exists $unclassified_hash{$k})) {
+        $orfan_hash{$k} = $all_seq_hash->{$k};
+    }
 }
 
 ##################################################
@@ -478,7 +430,7 @@ foreach my $val (@$rslt) {
 print "DEBUG: get read counts\n";
 timer();
 
-$read->execute(($libId));
+$read->execute();
 my $read_row = $read->fetchall_arrayref([],1);
 my %read_s = ();
 $read_s{'count'} = $read_row->[0]->[0];
@@ -490,7 +442,7 @@ $read_s{'mb'} = $read_row->[0]->[1];
 print "DEBUG: get trna\n";
 timer();
 
-$tRNA->execute(($libId));
+$tRNA->execute();
 my %tRNA_s = ();
 $tRNA_s{'count'} = 0;
 $tRNA_s{'lst'} = "";
@@ -508,7 +460,7 @@ while (my @rslt = $tRNA->fetchrow_array()) {
 print "DEBUG: get rrna\n";
 timer();
 
-$rRNA->execute(($libId));
+$rRNA->execute();
 my %rRNA_s = ();
 $rRNA_s{'count'} = 0;
 $rRNA_s{'lst'} = "";
@@ -556,15 +508,15 @@ foreach my $key (keys %file_output_list) {
 	  $logger->logdie("Could not open file $file_output_list{$key} to write");
 
    if ($key =~ /functional_list/i) {
-	  print OUT $functional_list;
+	  print OUT join(",", keys %fxnal_hash);
    } elsif ($key =~ /unclassified_list/i) {
-	  print OUT $unclassified_list;
+	  print OUT join(",", keys %unclassified_hash);
    } elsif ($key =~ /viral_list|top_viral_list|micro_list|top_micro_list/i) {
 	  print OUT $env{$key};
    } elsif ($key =~ /comp_lst|incomp_lst|start_lst|stop_lst|archaea_lst|bacteria_lst|phage_lst/i) {
 	  print OUT $orf{$key};
    } elsif ($key =~ /orfan/i){
-	  print OUT $orfan{'lst'};
+	  print OUT join(",", keys %orfan_hash);
    } elsif ($key =~ /tRNA/i){
 	  print OUT $tRNA_s{'lst'};
    } elsif ($key =~ /rRNA/i){
@@ -604,11 +556,11 @@ $inst_fxn->execute($max_id, $libId, $read_s{count}, $read_s{mb},
 				   $env{top_viral}, "topViralList_${libId}.txt",
 				   $env{micro}, "microList_${libId}.txt",
 				   $env{top_micro}, "topMicroList_${libId}.txt",
-				   $functional_count, "fxnIdList_${libId}.txt",
-				   $unclassified_count, "unClassIdList_${libId}.txt",
+				   scalar(keys %fxnal_hash), "fxnIdList_${libId}.txt",
+				   scalar(keys %unclassified_hash), "unClassIdList_${libId}.txt",
 				   $tRNA_s{count}, "tRNAList_${libId}.txt",
 				   $rRNA_s{count}, "rRNAList_${libId}.txt",
-				   $orfan{count}, "orfanList_${libId}.txt",
+				   scalar(keys %orfan_hash), "orfanList_${libId}.txt",
 				   $lineage, 0, getTimeStamp()
 				   );
 $max_id++;
