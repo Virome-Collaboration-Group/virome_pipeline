@@ -151,7 +151,7 @@ $dump_db_config->RewriteConfig();
 
 ## sequenceprep_orf_pep_config
 my $sequenceprep_orf_pep_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_default/sequence-prep.orf_pep.user.config");
+    -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_orf_pep/sequence-prep.orf_pep.user.config");
 $sequenceprep_orf_pep_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $sequenceprep_orf_pep_config->RewriteConfig();
 
