@@ -288,7 +288,7 @@ $db_id_writer->endTag('root');
 $db_id_writer->end();
 $db_id_out->close();
 
-$logger->info("Sequence classification by VIROME categories for $options{sample} started");
+$logger->info("Sequence classification by VIROME categories started");
 exit(0);
 
 ###############################################################################

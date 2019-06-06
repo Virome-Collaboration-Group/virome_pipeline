@@ -284,6 +284,7 @@ sub createLocalTreeAU {
 
     #### end fuction if no annoation block for give acc
     #### e.g go acc A0A0F9WK84
+    return $local_tree if (undef $block);
     return $local_tree if (length($block) == 0);
 
     foreach my $anno ( @{ decode_json($block) } ) {

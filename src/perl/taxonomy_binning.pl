@@ -168,7 +168,7 @@ $id_out->close();
 #$cmd = "mv $this->{scratch}/$config->{ToolInfo}->{database_name}->{value} $this->{output_dir}/$config->{ToolInfo}->{database_name}->{value}";
 #execute_cmd($cmd);
 
-$logger->info("Taxonomy binning for $options{sample} completed");
+$logger->info("Taxonomy binning completed");
 exit(0);
 
 ###############################################################################

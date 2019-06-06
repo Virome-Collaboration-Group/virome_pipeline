@@ -379,7 +379,7 @@ foreach my $libId ( keys %lib_feature ) {
     print STDOUT "INFO: Files for library $libId written.\n\n";
 }    #end lib output process
 
-$logger->info("ENVIRONMENTAL library stats for $options{sample} complete");
+$logger->info("ENVIRONMENTAL library stats complete");
 exit(0);
 
 ###############################################################################

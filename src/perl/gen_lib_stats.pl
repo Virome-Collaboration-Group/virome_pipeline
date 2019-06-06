@@ -224,6 +224,7 @@ my $result = $top_hits_qry->fetchall_hashref('sequenceId');
 #### all uniref hits are further divided based on fxnal flag into
 #### fxnal_hash or unclassified_hash
 my %meta_hash;
+my %uniref_hash;
 my %fxnal_hash;
 my %unclassified_hash;
 my %orfan_hash;
@@ -233,15 +234,41 @@ timer();
 
 foreach my $k (keys %{$result}) {
 	if ($result->{$k}->{db_ranking_code} == 100) {
-        if ($result->{$k}->{fxn}) {
-            $fxnal_hash{$k} = $result->{$k};
-        } else {
-            $unclassified_hash{$k} = $result->{$k};
-        }
+        $uniref_hash{$k} = $result->{$k};
 	} else {
 		$meta_hash{$k} = $result->{$k};
 	}
 }
+
+#### reset result array of hash
+$result = undef;
+
+###########################################
+# GET FUNCTIONAL AND UNASSIGNED FUNCTIONAL
+# CATEGORIES FOR ALL UNIREF100P SEQUENCES
+# AT EVALUE CUTOFF OF 0.001
+###########################################
+
+# for all uniref only sequences get functional/unassigned protein info.
+print STDOUT "check if fxnal hit per uniref record\n";
+
+my @arr = keys %uniref_hash;
+my $k = hasFunctionalHit(@arr);
+
+foreach my $sequenceId (keys %uniref_hash) {
+    #divide all hits in fxn and unclassified.
+    if (exists $k->{$sequenceId}) {
+        $fxnal_hash{$sequenceId} = $uniref_hash{$sequenceId}
+    }
+    else {
+        $unclassified_hash{$sequenceId} = $uniref_hash{$sequenceId}
+    }
+}
+
+print "DEBUG: hasfxnhit " . scalar(keys %{$k})."\n";
+print "DEBUG: uniref hash " . scalar(keys %uniref_hash)."\n";
+print "DEBUG: fxnal hash " . scalar(keys %fxnal_hash)."\n";
+print "DEBUG: unclassified " . scalar(keys %unclassified_hash)."\n";
 
 ###############################################
 # CALCULATE ENVIRONMENTAL CATEGORIES FOR
@@ -369,60 +396,60 @@ timer();
 print "DEBUG: get complete, incomplete and other orf types including orfans\n";
 timer();
 
-$all_seq->execute();
-my $all_seq_hash = $all_seq->fetchall_hashref('id');
-
-foreach my $k (keys %{$all_seq_hash}) {
-    my %opts;
-
-	map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $all_seq_hash->{$k}->{header});
-
-	if ($opts{type} =~ /lack[_|\s]stop/i){
-		$opts{type} = "stop";
-	} elsif ($opts{type} =~ /lack[_|\s]start/i){
-		$opts{type} = "start";
-	} elsif ($opts{type} =~ /incomplete/i){
-		$opts{type} = "incomp";
-	} elsif ($opts{type} =~ /complete/i){
-		$opts{type} = "comp";
-	}
-
-	#### set model stats.
-	$orf{$opts{model}.'_cnt'}++;
-
-	#if * at the end of bases, don't count it
-	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
-		$orf{$opts{model}.'_mb'} += ($all_seq_hash->{$k}->{size}-1);
-	} else {
-		$orf{$opts{model}.'_mb'} += $all_seq_hash->{$k}->{size};
-	}
-
-	if (length($orf{$opts{model}.'_lst'})) {
-		$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
-	} else { $orf{$opts{model}.'_lst'} = $all_seq_hash->{$k}->{id}; }
-
-	#### set type stats.
-	$orf{$opts{type}.'_cnt'}++;
-
-	####do not count * in bases
-	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
-		$orf{$opts{type}.'_mb'} += ($all_seq_hash->{$k}->{size} - 1);
-	} else { $orf{$opts{type}.'_mb'} += $all_seq_hash->{$k}->{size}; }
-
-	if (length($orf{$opts{type}.'_lst'})) {
-		$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
-	} else { $orf{$opts{type}.'_lst'} = $all_seq_hash->{$k}->{id}; }
-
-    #### generate orfan list by comparing all uniref/metagenome sequences that have
-    #### a blast hit that is significant that e_value < 0.001 if no such seq exist in
-    #### blastp table then classify the sequence as orfan.
-
-    #### if sequence id does not exists in meta_hash, fxnal_hash or unclassified_hash
-    #### then seq is an orfan
-    unless ((exists $meta_hash{$k}) or (exists $fxnal_hash{$k}) or (exists $unclassified_hash{$k})) {
-        $orfan_hash{$k} = $all_seq_hash->{$k};
-    }
-}
+# $all_seq->execute();
+# my $all_seq_hash = $all_seq->fetchall_hashref('id');
+#
+# foreach my $k (keys %{$all_seq_hash}) {
+#     my %opts;
+#
+# 	map { $opts{$1} = $2 if( /([^=]+)\s*=\s*([^=]+)/ ) } split(/\s+/, $all_seq_hash->{$k}->{header});
+#
+# 	if ($opts{type} =~ /lack[_|\s]stop/i){
+# 		$opts{type} = "stop";
+# 	} elsif ($opts{type} =~ /lack[_|\s]start/i){
+# 		$opts{type} = "start";
+# 	} elsif ($opts{type} =~ /incomplete/i){
+# 		$opts{type} = "incomp";
+# 	} elsif ($opts{type} =~ /complete/i){
+# 		$opts{type} = "comp";
+# 	}
+#
+# 	#### set model stats.
+# 	$orf{$opts{model}.'_cnt'}++;
+#
+# 	#if * at the end of bases, don't count it
+# 	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
+# 		$orf{$opts{model}.'_mb'} += ($all_seq_hash->{$k}->{size}-1);
+# 	} else {
+# 		$orf{$opts{model}.'_mb'} += $all_seq_hash->{$k}->{size};
+# 	}
+#
+# 	if (length($orf{$opts{model}.'_lst'})) {
+# 		$orf{$opts{model}.'_lst'} = $orf{$opts{model}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
+# 	} else { $orf{$opts{model}.'_lst'} = $all_seq_hash->{$k}->{id}; }
+#
+# 	#### set type stats.
+# 	$orf{$opts{type}.'_cnt'}++;
+#
+# 	####do not count * in bases
+# 	if ($all_seq_hash->{$k}->{basepair} =~ /\*$/) {
+# 		$orf{$opts{type}.'_mb'} += ($all_seq_hash->{$k}->{size} - 1);
+# 	} else { $orf{$opts{type}.'_mb'} += $all_seq_hash->{$k}->{size}; }
+#
+# 	if (length($orf{$opts{type}.'_lst'})) {
+# 		$orf{$opts{type}.'_lst'} = $orf{$opts{type}.'_lst'} . "," . $all_seq_hash->{$k}->{id};
+# 	} else { $orf{$opts{type}.'_lst'} = $all_seq_hash->{$k}->{id}; }
+#
+#     #### generate orfan list by comparing all uniref/metagenome sequences that have
+#     #### a blast hit that is significant that e_value < 0.001 if no such seq exist in
+#     #### blastp table then classify the sequence as orfan.
+#
+#     #### if sequence id does not exists in meta_hash, fxnal_hash or unclassified_hash
+#     #### then seq is an orfan
+#     unless ((exists $meta_hash{$k}) or (exists $fxnal_hash{$k}) or (exists $unclassified_hash{$k})) {
+#         $orfan_hash{$k} = $all_seq_hash->{$k};
+#     }
+# }
 
 ##################################################
 #### GET READ COUNT AND MEGABASES
@@ -430,11 +457,13 @@ foreach my $k (keys %{$all_seq_hash}) {
 print "DEBUG: get read counts\n";
 timer();
 
-$read->execute();
-my $read_row = $read->fetchall_arrayref([],1);
+# $read->execute();
+# my $read_row = $read->fetchall_arrayref([],1);
 my %read_s = ();
-$read_s{'count'} = $read_row->[0]->[0];
-$read_s{'mb'} = $read_row->[0]->[1];
+$read_s{'count'} = 0;
+$read_s{'mb'} = 0;
+# $read_s{'count'} = $read_row->[0]->[0];
+# $read_s{'mb'} = $read_row->[0]->[1];
 
 ##################################################
 #### GET TRNA COUNT AND LIST
@@ -442,17 +471,17 @@ $read_s{'mb'} = $read_row->[0]->[1];
 print "DEBUG: get trna\n";
 timer();
 
-$tRNA->execute();
+# $tRNA->execute();
 my %tRNA_s = ();
 $tRNA_s{'count'} = 0;
 $tRNA_s{'lst'} = "";
 
-while (my @rslt = $tRNA->fetchrow_array()) {
-	$tRNA_s{'count'}++;
-	if (length($tRNA_s{'lst'})) {
-		$tRNA_s{'lst'} = $tRNA_s{'lst'} . "," . $rslt[0];
-	} else { $tRNA_s{'lst'} = $rslt[0]; }
-}
+# while (my @rslt = $tRNA->fetchrow_array()) {
+# 	$tRNA_s{'count'}++;
+# 	if (length($tRNA_s{'lst'})) {
+# 		$tRNA_s{'lst'} = $tRNA_s{'lst'} . "," . $rslt[0];
+# 	} else { $tRNA_s{'lst'} = $rslt[0]; }
+# }
 
 ###################################################
 #### GET RRNA COUNT AND LIST
@@ -465,12 +494,12 @@ my %rRNA_s = ();
 $rRNA_s{'count'} = 0;
 $rRNA_s{'lst'} = "";
 
-while (my @rslt = $rRNA->fetchrow_array()) {
-	$rRNA_s{'count'}++;
-	if (length($rRNA_s{'lst'})) {
-		$rRNA_s{'lst'} = $rRNA_s{'lst'} . "," . $rslt[0];
-	} else { $rRNA_s{'lst'} = $rslt[0]; }
-}
+# while (my @rslt = $rRNA->fetchrow_array()) {
+# 	$rRNA_s{'count'}++;
+# 	if (length($rRNA_s{'lst'})) {
+# 		$rRNA_s{'lst'} = $rRNA_s{'lst'} . "," . $rslt[0];
+# 	} else { $rRNA_s{'lst'} = $rslt[0]; }
+# }
 
 
 #################################################
@@ -593,20 +622,20 @@ sub check_parameters {
 
 ###############################################################################
 sub hasFunctionalHit {
-   my $seqId = shift;
+   my $seqId = join(",", @_);
 
-   my $fxn_hit = $dbh->prepare(qq{SELECT	b.id
-								  FROM		blastp b
-								  WHERE 	b.fxn_topHit=1
-									and 	b.e_value<=0.001
-									and		b.sequenceId=?});
-   $fxn_hit->execute($seqId);
+   my $qry_stmt = qq{SELECT distinct b.sequenceId, b.fxn_topHit
+								  FROM blastp b
+								  WHERE b.fxn_topHit=1
+									and b.e_value<=0.001
+									and b.sequenceId in ($seqId)};
 
-   while (my $hits = $fxn_hit->fetchrow_hashref()) {
-	  return 1;
-   }
+   my $fxn_hit = $dbh->prepare($qry_stmt);
+   $fxn_hit->execute();
 
-   return 0;
+   my $result = $fxn_hit->fetchall_hashref('sequenceId');
+
+   return $result;
 }
 
 ###############################################################################
