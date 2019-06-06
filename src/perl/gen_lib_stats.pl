@@ -224,6 +224,7 @@ my $result = $top_hits_qry->fetchall_hashref('sequenceId');
 #### all uniref hits are further divided based on fxnal flag into
 #### fxnal_hash or unclassified_hash
 my %meta_hash;
+my %uniref_hash;
 my %fxnal_hash;
 my %unclassified_hash;
 my %orfan_hash;
@@ -233,15 +234,41 @@ timer();
 
 foreach my $k (keys %{$result}) {
 	if ($result->{$k}->{db_ranking_code} == 100) {
-        if ($result->{$k}->{fxn}) {
-            $fxnal_hash{$k} = $result->{$k};
-        } else {
-            $unclassified_hash{$k} = $result->{$k};
-        }
+        $uniref_hash{$k} = $result->{$k};
 	} else {
 		$meta_hash{$k} = $result->{$k};
 	}
 }
+
+#### reset result array of hash
+$result = undef;
+
+###########################################
+# GET FUNCTIONAL AND UNASSIGNED FUNCTIONAL
+# CATEGORIES FOR ALL UNIREF100P SEQUENCES
+# AT EVALUE CUTOFF OF 0.001
+###########################################
+
+# for all uniref only sequences get functional/unassigned protein info.
+print STDOUT "check if fxnal hit per uniref record\n";
+
+my @arr = keys %uniref_hash;
+my $k = hasFunctionalHit(@arr);
+
+foreach my $sequenceId (keys %uniref_hash) {
+    #divide all hits in fxn and unclassified.
+    if (exists $k->{$sequenceId}) {
+        $fxnal_hash{$sequenceId} = $uniref_hash{$sequenceId}
+    }
+    else {
+        $unclassified_hash{$sequenceId} = $uniref_hash{$sequenceId}
+    }
+}
+
+print "DEBUG: hasfxnhit " . scalar(keys %{$k})."\n";
+print "DEBUG: uniref hash " . scalar(keys %uniref_hash)."\n";
+print "DEBUG: fxnal hash " . scalar(keys %fxnal_hash)."\n";
+print "DEBUG: unclassified " . scalar(keys %unclassified_hash)."\n";
 
 ###############################################
 # CALCULATE ENVIRONMENTAL CATEGORIES FOR
@@ -593,20 +620,20 @@ sub check_parameters {
 
 ###############################################################################
 sub hasFunctionalHit {
-   my $seqId = shift;
+   my $seqId = join(",", @_);
 
-   my $fxn_hit = $dbh->prepare(qq{SELECT	b.id
-								  FROM		blastp b
-								  WHERE 	b.fxn_topHit=1
-									and 	b.e_value<=0.001
-									and		b.sequenceId=?});
-   $fxn_hit->execute($seqId);
+   my $qry_stmt = qq{SELECT distinct b.sequenceId, b.fxn_topHit
+								  FROM blastp b
+								  WHERE b.fxn_topHit=1
+									and b.e_value<=0.001
+									and b.sequenceId in ($seqId)};
 
-   while (my $hits = $fxn_hit->fetchrow_hashref()) {
-	  return 1;
-   }
+   my $fxn_hit = $dbh->prepare($qry_stmt);
+   $fxn_hit->execute();
 
-   return 0;
+   my $result = $fxn_hit->fetchall_hashref('sequenceId');
+
+   return $result;
 }
 
 ###############################################################################

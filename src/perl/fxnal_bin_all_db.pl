@@ -130,7 +130,7 @@ $id_writer->end();
 $xml_out->close();
 $id_out->close();
 
-$logger->info("Functional binning all database for $options{sample} complete");
+$logger->info("Functional binning all database complete");
 exit(0);
 
 ###############################################################################

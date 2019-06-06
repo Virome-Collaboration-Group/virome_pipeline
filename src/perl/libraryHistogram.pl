@@ -91,26 +91,20 @@ my $libId = 1;
 
 my $orf_sel = $dbh->prepare(q{SELECT s.size*3 as hval
 							  FROM 	sequence s
-								INNER JOIN
-									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
-								and sr.typeId = 3
+								and s.typeId = 3
 							  ORDER BY hval desc});
 
 my $read_sel = $dbh->prepare(q{SELECT s.size as hval
 							  FROM 	sequence s
-								INNER JOIN
-									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
-								and sr.typeId = 1
+								and s.typeId = 1
 							  ORDER BY hval desc});
 
 my $gc_sel = $dbh->prepare(q{SELECT s.gc as hval
 							  FROM 	sequence s
-								INNER JOIN
-									sequence_relationship sr on s.id = sr.objectId
 							  WHERE s.libraryId = ?
-								and sr.typeId = 1
+								and s.typeId = 1
 							  ORDER BY hval desc});
 my $rslt;
 
@@ -126,7 +120,7 @@ $gc_sel->execute($libId);
 $rslt = $gc_sel->fetchall_arrayref({});
 binGC($rslt, $libId, "GC");
 
-$logger->info("Library histogram for $options{sample} completed");
+$logger->info("Library histogram completed");
 
 exit(0);
 
