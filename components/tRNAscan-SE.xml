@@ -28,33 +28,33 @@
             <name>create bsml list</name>
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/create_list_file</executable>
-            <param>  
+            <param>
                 <key>--directory</key>
                 <value>$;OUTPUT_DIRECTORY$;</value>
             </param>
-            <param>  
+            <param>
                 <key>--regex</key>
                 <value>".*\.bsml"</value>
             </param>
-            <param>  
+            <param>
                 <key>--output_list</key>
                 <value>$;BSML_OUTPUT_LIST$;</value>
             </param>
         </command>
         <command>
             <type>RunUnixCommand</type>
-            <name>create raw list</name>
+            <name>create output txt list</name>
             <state>incomplete</state>
             <executable>$;BIN_DIR$;/create_list_file</executable>
-            <param>  
+            <param>
                 <key>--directory</key>
                 <value>$;OUTPUT_DIRECTORY$;</value>
             </param>
-            <param>  
+            <param>
                 <key>--regex</key>
-                <value>".*\.raw"</value>
+                <value>".*\.txt"</value>
             </param>
-            <param>  
+            <param>
                 <key>--output_list</key>
                 <value>$;RAW_OUTPUT_LIST$;</value>
             </param>
