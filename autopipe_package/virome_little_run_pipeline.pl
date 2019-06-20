@@ -184,6 +184,12 @@ $mgol_rubble_config->setval('parameters', '$;DATABASE_CLUST_PATH$;', '/opt/datab
 $mgol_rubble_config->setval('parameters', '$;LOOKUP$;', '/opt/database/' . $version_info->{mgol_lookup} );
 $mgol_rubble_config->RewriteConfig();
 
+my $tRNAscan_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/tRNAscan-SE/" . $pipeline->id . "_default/tRNAscan-SE.default.user.config");
+$tRNAscan_config->setval('parameters', '$;THREADS$;', $options{threads} );
+$tRNAscan_config->RewriteConfig();
+
+
 #### point to PERSISTENT_STORAGE sqlite3 file
 my @array = qw(mgol rna uniref univec);
 foreach my $token (@array) {
