@@ -108,10 +108,9 @@ if( $options{'help'} ){
 
 ## open the log if requested
 my $logfh;
-if (defined $options{log}) {
-    open($logfh, ">$options{log}") || die "can't create log file: $!";
-}
-
+# if (defined $options{log}) {
+#     open($logfh, ">$options{log}") || die "can't create log file: $!";
+# }
 
 ##############################
 ## important bits here
@@ -132,11 +131,28 @@ my $template = Ergatis::SavedPipeline->new(
 my $pipeline = $template->write_pipeline( repository_root => $options{repository_root},
                                           id_repository => $options{id_repository} );
 
+open($logfh, ">", "$output_dir/logs/$pipeline->{'id'}.analytic") or
+    die "Could not open file to write error log $output_dir/logs/$pipeline->{'id'}.analytic\n";
+
+_log("VIROME Analysis Pipeline analytics.");
+
+my $start_time = localtime();
+
+_log("Start time: " . format_time($start_time));
+_log("Version info: " . $version_info);
+_log("Input file name: " . $fasta);
+_log("Input file size: " . -s $fasta);
+
+$no_of_seq = `grep -c "^>" $fasta`;
+chomp $no_of_seq;
+
+_log("Number of raw input seq: " . $no_of_seq);
+
 ## here you can use Ergatis::ConfigFiles to edit some of the newly-written
 ##  component configurations before pipeline execution.  One example is shown.
 ##  naming and path conventions allow you to know where the component file is
 
-## set output dir for init-db
+#### set output dir for init-db
 my $init_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/init-db/" . $pipeline->id . "_default/init-db.default.user.config");
 $init_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
@@ -149,7 +165,7 @@ $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
 $dump_db_config->RewriteConfig();
 
-## $fasta_size_filter
+#### $fasta_size_filter
 my $fasta_size_filter_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/fasta_size_filter/" . $pipeline->id . "_default/fasta_size_filter.default.user.config");
 $fasta_size_filter_config->setval('input', '$;INPUT_FILE$;', $fasta );
@@ -272,9 +288,8 @@ my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
 # The 'block' term is used to make the pipeline invocation synchronous, so that
 # we can determine success/failure by the return and use that to determine this
 # script's exit value.
-my $success = $pipeline->run( ergatis_cfg => $ergatis_cfg,
-                           block       => 1
-                         );
+my $success = $pipeline->run(ergatis_cfg => $ergatis_cfg, block => 1);
+
 if (! $success) {
     my $stderr = "Problem running pipeline id:$pipeline->{'id'} with input: $options{'fasta'}\n\n";
     $stderr .= "$pipeline->{'diagnostics'}->{'complete_components'} of ";
@@ -304,7 +319,7 @@ if (! $success) {
 
     print STDERR $stderr;
 
-    $cmd = "scp /opt/projects/virome/workflow/runtime/pipeline/$pipeline->{'id'}/pipeline.xml.log";
+    $cmd = "scp $options{repository_root}/workflow/runtime/pipeline/$pipeline->{'id'}/pipeline.xml.log";
     $cmd .= " $output_dir/logs/.";
     system("$cmd");
 
@@ -312,12 +327,48 @@ if (! $success) {
         die "Could not open file to write error log $output_dir/logs/$pipeline->{'id'}.stderr\n";
     print OUT $stderr;
     close(OUT);
+} else {
+    #### pipeline ended in success collect few more data points.
+
+    #### extract number of orfs
+    my $dir = "$options{repository_root}/output_repository/mga2seq_pep/1_default/i1/g1";
+
+    opendir(DIR, "$dir") or die "Could open directry $dir";
+    while( ($filename = readdir(DIR))) {
+       if ($filename =~ /\.pep$/) {
+           my $no_of_orf = `grep -c "^>" $dir/$filename`;
+           chomp $no_of_orf;
+
+           _log("Number of ORFs: " . $no_of_orf);
+           _log("File size of ORFs: " . -s "$dir/$filename");
+       }
+    }
+    closedir(DIR);
+
+    #### read and write read/contig stats
+    $dir = "$options{repository_root}/output_repository/nt_fasta_check/1_default/i1/g1";
+
+    opendir(DIR, "$dir") or die "Could open directry $dir";
+    while( ($filename = readdir(DIR))) {
+       if ($filename =~ /\.stats$/) {
+           open(S, "<", "$dir/$filename") or die "Could not open file $dir/$filename\n";
+           while(<S>) {
+               _log($_);
+           }
+           close(S);
+       }
+    }
+    closedir(DIR);
 }
 
 #print Dumper(\$pipeline->{'diagnostics'});
 
 ## Determine the exit value based on the success of the pipeline.
 my $exit_value = ($success) ? 0 : 1;
+
+my $enlapse_time = localtime() - $start_time;
+_log("Start time: " . format_time($enlapse_time));
+close(LOG);
 
 exit $exit_value;
 
@@ -366,7 +417,8 @@ sub parse_version_info {
 sub timestamp {
 	my @months   = qw(01 02 03 04 05 06 07 08 09 10 11 12);
 	my @weekDays = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
-	my (
+
+    my (
 		$second,     $minute,    $hour,
 		$dayOfMonth, $month,     $yearOffset,
 		$dayOfWeek,  $dayOfYear, $daylightSavings
@@ -378,3 +430,18 @@ sub timestamp {
 
     return $theTime;
 }
+
+###############################################################################
+sub format_timer {
+
+    my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = shift;
+
+    my @months   = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    my @weekDays = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
+
+    my $year    = 1900 + $yearOffset;
+	my $theTime = "$hour:$minute:$second, $weekDays[$dayOfWeek] $months[$month] $dayOfMonth, $year";
+
+    return $theTime;
+}
+###############################################################################

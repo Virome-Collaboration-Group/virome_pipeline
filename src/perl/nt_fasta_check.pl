@@ -83,9 +83,11 @@ my $filebase = fileparse($options{input},  qr/\.[^.]*/);
 my ($warn1,$warn2,$warn3,$warn4,$warn5) = (0,0,0,0,0);
 
 my $final_output=$options{output_dir}."/".$filebase.".edited.fsa";
+my $stats_output=$options{output_dir}."/".$filebase.".stats";
 my $ref_file=$options{output_dir}."/".$filebase.".ref";
 
 open(FOUT, ">", $final_output) or $logger->logdie("Cannot open output file $final_output\n");
+open(STATS, ">", $stats_output) or $logger->logdie("Cannot open output file $stats_output\n");
 open(REF, ">", $ref_file) or $logger->logdie("Cannot open ref output file $ref_file\n");
 
 my $inseq = Bio::SeqIO->new(-file   => $options{input},
@@ -195,9 +197,14 @@ sub freq_cal
 
     my $ATCGcount = () = $seq =~ /[ATCG]/ig;
     my $Ncount = () = $seq =~ /[N]/ig;
+    my $invalidBase = () = $seq =~ /[^ATCGNRYSWKMBDHV]/ig;
 
     my $freq_atcg = ($ATCGcount/$len)*100;
     my $freq_n = ($Ncount/$len)*100;
+
+    print STATS "Freq. ACTG: " . $freq_atcg . "\n";
+    print STATS "Freq. N: " . $freq_n . "\n";
+    print STATS "Invalid Bases: " . $invalidBases ."\n";
 
     if($freq_atcg < 97) {
     	print STDERR "Warning (Minor) for ATCG Frequency (".$freq_atcg."\%) for seq id: $seq_name\n";
