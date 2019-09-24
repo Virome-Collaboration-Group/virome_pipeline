@@ -143,7 +143,7 @@ _log("Version info: " . $version_info);
 _log("Input file name: " . $fasta);
 _log("Input file size: " . -s $fasta);
 
-$no_of_seq = `grep -c "^>" $fasta`;
+my $no_of_seq = `grep -c "^>" $fasta`;
 chomp $no_of_seq;
 
 _log("Number of raw input seq: " . $no_of_seq);
