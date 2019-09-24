@@ -93,6 +93,11 @@ open(REF, ">", $ref_file) or $logger->logdie("Cannot open ref output file $ref_f
 my $inseq = Bio::SeqIO->new(-file   => $options{input},
                             -format => 'fasta' );
 
+my $total_size = 0;
+my $total_actg = 0;
+my $total_ncount = 0;
+my $total_invalid_bases = 0;
+
 while (my $s = $inseq->next_seq) {
 	#my $new_name = name_modifier($s->id, $libObject->{prefix});
     my $new_name = name_modifier($s->id);
@@ -102,6 +107,11 @@ while (my $s = $inseq->next_seq) {
 	my $sequence_size = length($sequence_string);
 	my $atgc = $ATGC / $sequence_size;
 
+    $total_actg += () = $sequence_string =~ /[ATCG]/ig;
+    $total_ncount += () = $sequence_string =~ /[N]/ig;
+    $total_invalid_bases += () = $sequence_string =~ /[^ATCGNRYSWKMBDHV]/ig;
+    $total_size += $sequence_size;
+
 	if ($qc_flag == 1) {
 	    print FOUT ">".$new_name."\n".$s->seq."\n";
 	}
@@ -109,27 +119,18 @@ while (my $s = $inseq->next_seq) {
 	$count++;
 }
 
+$total_actg = sprintf("%.2f", ($total_actg/$total_size)*100);
+$total_ncount = sprintf("%.2f", ($total_ncount/$total_size)*100);
+$total_invalid_bases = sprintf("%.2f", ($total_invalid_bases/$total_size)*100);
 
-#if(($warn1/$count) > 0.05) {
-#	print STDERR "ERROR 255: Number of ATCG minor warnings exceeds 5\% (".($warn1/$count).")\n";
-#	exit(255);
-#}
-
-#if(($warn2/$count) > 0.03) {
-#	print STDERR "ERROR 256: Number of ATCG major warnings exceeds 3\% (".($warn2/$count).")\n";
-#    exit(256);
-#}
-#if(($warn3/$count) > 0.05) {
-#	print STDERR "ERROR 257: Number of N minor warnings exceeds 5\% (".($warn3/$count).")\n";
-#    exit(257);
-#}
-#if(($warn4/$count) > 0.03) {
-#	print STDERR "ERROR 258: Number of N major warnings exceeds 3\% (".($warn4/$count).")\n";
-#    exit(258);
-#}
+print STATS "Freq. ACTG: " . $total_actg . "\n";
+print STATS "Freq. N: " . $total_ncount . "\n";
+print STATS "Invalid Bases: " . $total_invalid_bases ."\n";
+print STATS "Total number of Bases: " . $total_size."\n";
 
 close(FOUT);
 close(REF);
+close(STATS);
 
 exit(0);
 ###############################################################################
@@ -201,10 +202,6 @@ sub freq_cal
 
     my $freq_atcg = ($ATCGcount/$len)*100;
     my $freq_n = ($Ncount/$len)*100;
-
-    print STATS "Freq. ACTG: " . $freq_atcg . "\n";
-    print STATS "Freq. N: " . $freq_n . "\n";
-    print STATS "Invalid Bases: " . $invalidBases ."\n";
 
     if($freq_atcg < 97) {
     	print STDERR "Warning (Minor) for ATCG Frequency (".$freq_atcg."\%) for seq id: $seq_name\n";
