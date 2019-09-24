@@ -197,7 +197,7 @@ sub freq_cal
 
     my $ATCGcount = () = $seq =~ /[ATCG]/ig;
     my $Ncount = () = $seq =~ /[N]/ig;
-    my $invalidBase = () = $seq =~ /[^ATCGNRYSWKMBDHV]/ig;
+    my $invalidBases = () = $seq =~ /[^ATCGNRYSWKMBDHV]/ig;
 
     my $freq_atcg = ($ATCGcount/$len)*100;
     my $freq_n = ($Ncount/$len)*100;

@@ -86,6 +86,7 @@ use lib ("/var/www/html/cgi") ;
 use Ergatis::ConfigFile;
 use Ergatis::SavedPipeline;
 
+END { _log("The program ran for " . time() - $^T . " seconds"); }
 
 my %options = ();
 my $results = GetOptions (\%options,
@@ -135,11 +136,8 @@ open($logfh, ">", "$output_dir/logs/$pipeline->{'id'}.analytic") or
     die "Could not open file to write error log $output_dir/logs/$pipeline->{'id'}.analytic\n";
 
 _log("VIROME Analysis Pipeline analytics.");
-
-my $start_time = localtime();
-
-_log("Start time: " . format_time($start_time));
-_log("Version info: " . $version_info);
+_log("Start time: " . format_time());
+_log("Version info: " . $version_info->{version} . " build date: " . $version_info->{date});
 _log("Input file name: " . $fasta);
 _log("Input file size: " . -s $fasta);
 
@@ -365,9 +363,8 @@ if (! $success) {
 
 ## Determine the exit value based on the success of the pipeline.
 my $exit_value = ($success) ? 0 : 1;
+_log("End time: " . format_time());
 
-my $enlapse_time = localtime() - $start_time;
-_log("Start time: " . format_time($enlapse_time));
 close(LOG);
 
 exit $exit_value;
@@ -434,7 +431,7 @@ sub timestamp {
 ###############################################################################
 sub format_time {
 
-    my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = shift;
+    my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = localtime();
 
     my @months   = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
     my @weekDays = qw(Sun Mon Tue Wed Thu Fri Sat Sun);
