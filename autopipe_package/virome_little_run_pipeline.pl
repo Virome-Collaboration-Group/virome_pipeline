@@ -432,7 +432,7 @@ sub timestamp {
 }
 
 ###############################################################################
-sub format_timer {
+sub format_time {
 
     my ($second, $minute, $hour, $dayOfMonth, $month, $yearOffset, $dayOfWeek, $dayOfYear, $daylightSavings) = shift;
 
