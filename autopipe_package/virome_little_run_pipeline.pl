@@ -139,7 +139,7 @@ _log("VIROME Analysis Pipeline analytics.");
 _log("Start time: " . format_time());
 _log("Version info: " . $version_info->{version} . " build date: " . $version_info->{date});
 _log("Input file name: " . $fasta);
-_log("Input file size: " . -s $fasta);
+_log("Input file size: " . ((-s $fasta)/(1024 * 1024)));
 
 my $no_of_seq = `grep -c "^>" $fasta`;
 chomp $no_of_seq;
