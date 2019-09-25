@@ -180,7 +180,7 @@ if (-e "$persistent_outdir.tar" ) {
 }
 
 #### create tar without /opt/output in the path.
-$cmd = "tar --exclude=\"$persistent_outdir/processing.sqlite3\"";
+$cmd = "tar --exclude=\"$dirname/processing.sqlite3\"";
 $cmd .= " -czvf $persistent_outdir.tar.gz -C /opt/output $dirname";
 system($cmd);
 
@@ -204,8 +204,10 @@ $cmd = "tar -cvf $persistent_outdir.tar -C /opt/output $dirname.tar.gz $md5sum";
 system($cmd);
 
 #### remove unwanted files;
-$cmd = "rm -rf $persistent_outdir.tar.gz /opt/output/$md5sum $persistent_outdir";
-system($cmd);
+unless ($options{debug}){
+    $cmd = "rm -rf $persistent_outdir.tar.gz /opt/output/$md5sum $persistent_outdir";
+    system($cmd);
+}
 
 $logger->info("Database dump for $filename completed");
 exit(0);
@@ -220,6 +222,8 @@ sub check_parameters {
             $logger->logdie("No input defined, plesae read perldoc $0\n\n");
         }
     }
+
+    $opitons{debug} = 0 unless (defined $options{debug});
 }
 
 ###############################################################################

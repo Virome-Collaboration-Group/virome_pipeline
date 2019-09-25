@@ -97,6 +97,7 @@ my $results = GetOptions (\%options,
                           'ergatis_ini|e=s',
                           'threads|d=s',
                           'log|l=s',
+                          'debug|v=s',
                           'help|h') || pod2usage();
 
 ## display documentation
@@ -161,6 +162,7 @@ my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
+$dump_db_config->setval('parameters', '$;DEBUG$;', $options{debug} );
 $dump_db_config->RewriteConfig();
 
 #### $fasta_size_filter
@@ -387,6 +389,8 @@ sub check_parameters {
             die "--$option is a required option";
         }
     }
+
+    $opitons{debug} = 0 unless (defined $options{debug});
 }
 ###############################################################################
 sub create_output_dir {
