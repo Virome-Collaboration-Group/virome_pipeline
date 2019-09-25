@@ -223,7 +223,7 @@ sub check_parameters {
         }
     }
 
-    $opitons{debug} = 0 unless (defined $options{debug});
+    $options{debug} = 0 unless (defined $options{debug});
 }
 
 ###############################################################################
