@@ -380,17 +380,16 @@ sub _log {
 
 ###############################################################################
 sub check_parameters {
-    my $options = shift;
-
-    ## make sure required arguments were passed
+    #### make sure required arguments were passed
     my @required = qw( template_directory repository_root id_repository ergatis_ini fasta);
-    for my $option ( @required ) {
-        unless  ( defined $$options{$option} ) {
-            die "--$option is a required option";
+
+    foreach my $key (@required) {
+        unless ($options{$key}) {
+            die "--$key is a required option";
         }
     }
 
-    $opitons{debug} = 0 unless (defined $options{debug});
+    $opitons{debug} = 0 unless (defined $$options{debug});
 }
 ###############################################################################
 sub create_output_dir {
