@@ -103,6 +103,10 @@ make_path($persistent_outdir."/idFiles");
 make_path($persistent_outdir."/xDocs");
 ###############################################################################
 $logger->info("Database dump for $filename started");
+$logger->info("Persistent storage: " . $persistent_outdir);
+$logger->info("Dirname: " . $dirname);
+$logger->info("Filename: " . $filename);
+$logger->info("Debug: " . $options{debug});
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
@@ -180,9 +184,10 @@ if (-e "$persistent_outdir.tar" ) {
 }
 
 #### create tar without /opt/output in the path.
-$cmd = "tar --exclude=\"$dirname/processing.sqlite3\"";
+$cmd = "tar --exclude=\"$dirname/logs\" --exclude=\"$dirname/processing.sqlite3\"";
 $cmd .= " -czvf $persistent_outdir.tar.gz -C /opt/output $dirname";
 system($cmd);
+$logger->info("Debug: " . $cmd);
 
 #### get md5sum and touch a file with that name.
 my $md5sum = `md5sum $persistent_outdir.tar.gz`;
@@ -198,15 +203,18 @@ $md5sum =~ s/\s+$//;
 #### touch a file with md5sum.
 $cmd = "touch /opt/output/$md5sum";
 system($cmd);
+$logger->info("Debug: " . $cmd);
 
 #### create a tarball for md5sum file and tar.gz file.
 $cmd = "tar -cvf $persistent_outdir.tar -C /opt/output $dirname.tar.gz $md5sum";
 system($cmd);
+$logger->info("Debug: " . $cmd);
 
 #### remove unwanted files;
 unless ($options{debug}){
     $cmd = "rm -rf $persistent_outdir.tar.gz /opt/output/$md5sum $persistent_outdir";
     system($cmd);
+    $logger->info("Debug: " . $cmd);
 }
 
 $logger->info("Database dump for $filename completed");
