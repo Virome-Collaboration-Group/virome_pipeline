@@ -75,7 +75,7 @@ my $results = GetOptions (\%options,
 						  'database|b=s',
                           'pstore|s=s',
                           'log|l=s',
-                          'debug|d=s',
+                          'verbose63|v=i',
                           'help|h') || pod2usage();
 
 my $logfile = $options{'log'} || Ergatis::Logger::get_default_logfilename();
@@ -87,7 +87,7 @@ if( $options{'help'} ){
     pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
 
-print STDOUT "Debug: " . $options{debug} . "\n";
+print STDOUT "Debug: " . $options{verbose63} . "\n";
 
 ##############################################################################
 ## make sure everything passed was peachy
@@ -109,7 +109,7 @@ print STDOUT "Database dump for $filename started\n";
 print STDOUT "Persistent storage: " . $persistent_outdir . "\n";
 print STDOUT "Dirname: " . $dirname . "\n";
 print STDOUT "Filename: " . $filename . "\n";
-print STDOUT "Debug: " . $options{debug} . "\n";
+print STDOUT "Debug: " . $options{verbose63} . "\n";
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
@@ -214,7 +214,7 @@ system($cmd);
 print STDOUT "Debug: " . $cmd;
 
 #### remove unwanted files;
-unless ($options{debug}){
+unless ($options{verbose63}){
     $cmd = "rm -rf $persistent_outdir.tar.gz /opt/output/$md5sum $persistent_outdir";
     system($cmd);
     print STDOUT "Debug: " . $cmd;
@@ -234,7 +234,7 @@ sub check_parameters {
         }
     }
 
-    $options{debug} = 0 unless (defined $options{debug});
+    $options{verbose63} = 0 unless (defined $options{verbose63});
 }
 
 ###############################################################################
