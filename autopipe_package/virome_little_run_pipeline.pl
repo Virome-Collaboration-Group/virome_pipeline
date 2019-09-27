@@ -105,6 +105,8 @@ if( $options{'help'} ){
     pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
 
+print "DEBUG VALUE: " .$options{debug}. "\n";
+
 ## make sure everything passed was peachy
 &check_parameters(\%options);
 
