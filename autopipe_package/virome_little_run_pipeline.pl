@@ -344,7 +344,8 @@ if (! $success) {
            chomp $no_of_orf;
 
            _log("Number of ORFs: " . $no_of_orf);
-           _log("File size of ORFs: " . -s "$dir/$filename");
+           my $v = "$dir/$filename";
+           _log("File size of ORFs: " . sprintf("%.2f", ((-s $v)/(1024 * 1024))) . "MB");
        }
     }
     closedir(DIR);
@@ -360,6 +361,33 @@ if (! $success) {
                _log($_);
            }
            close(S);
+       }
+    }
+    closedir(DIR);
+
+    #### blastp uniref output
+    $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_uniref/i1/g1";
+
+    opendir(DIR, "$dir") or die "Could open directry $dir";
+    while( ($filename = readdir(DIR))) {
+       if ($filename =~ /\.btab/) {
+           my $len = `wc -l $dir/$filename`;
+           chomp $len;
+
+           _log("Number of BLASTP rows (UNIREF100P): " . $len . "\n");
+       }
+    }
+    closedir(DIR);
+
+    $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_mgol/i1/g1";
+
+    opendir(DIR, "$dir") or die "Could open directry $dir";
+    while( ($filename = readdir(DIR))) {
+       if ($filename =~ /\.btab/) {
+           my $len = `wc -l $dir/$filename`;
+           chomp $len;
+
+           _log("Number of BLASTP rows (MGOL): " . $len . "\n");
        }
     }
     closedir(DIR);
