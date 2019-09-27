@@ -123,6 +123,8 @@ my $cmd = "";
 my $filename = fileparse($fasta, qr/\.[^.]*/);
 my $output_dir = "/opt/output/". $filename ."_". timestamp();
 
+print "DEBUG VALUE: " .$options{debug}. "\n";
+
 &create_output_dir($output_dir);
 
 my $version_info = parse_version_info();
@@ -160,9 +162,9 @@ $init_db_config->RewriteConfig();
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
-$dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta );
-$dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
-$dump_db_config->setval('parameters', '$;DEBUG$;', $options{debug} );
+$dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta);
+$dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
+$dump_db_config->setval('parameters', '$;DEBUG$;', $options{debug});
 $dump_db_config->RewriteConfig();
 
 #### $fasta_size_filter

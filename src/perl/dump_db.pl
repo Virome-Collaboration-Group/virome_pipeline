@@ -52,6 +52,7 @@ Directory filled with tab-delimmited table dumps.
 
 use strict;
 use DBI;
+use Data::Dumper;
 use Getopt::Long qw(:config no_ignore_case no_auto_abbrev pass_through);
 use Pod::Usage;
 use File::Basename;
@@ -85,6 +86,9 @@ $logger = $logger->get_logger();
 if( $options{'help'} ){
     pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
+
+print STDOUT "Debug: " . $options{debug} . "\n";
+
 ##############################################################################
 ## make sure everything passed was peachy
 &check_parameters(\%options);
@@ -101,11 +105,11 @@ my $cmd = "";
 make_path($persistent_outdir."/idFiles");
 make_path($persistent_outdir."/xDocs");
 ###############################################################################
-print STDOUT "Database dump for $filename started";
-print STDOUT "Persistent storage: " . $persistent_outdir;
-print STDOUT "Dirname: " . $dirname;
-print STDOUT "Filename: " . $filename;
-print STDOUT "Debug: " . $options{debug};
+print STDOUT "Database dump for $filename started\n";
+print STDOUT "Persistent storage: " . $persistent_outdir . "\n";
+print STDOUT "Dirname: " . $dirname . "\n";
+print STDOUT "Filename: " . $filename . "\n";
+print STDOUT "Debug: " . $options{debug} . "\n";
 
 my $dbh = DBI->connect("dbi:SQLite:dbname=$options{database}", "", "", { RaiseError => 1}) or die $DBI::errstr;
 
