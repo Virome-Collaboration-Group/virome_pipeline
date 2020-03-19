@@ -152,12 +152,15 @@ foreach my $table (@tables) {
     $cmd = "sed -i '1s/^/#/' $persistent_outdir/$table.tab";
     system($cmd);
 }
+if (-d $options{output_dir}."/xDocs") {
+    $cmd = "cp $options{output_dir}/xDocs/* $persistent_outdir/xDocs";
+    system($cmd);
+}
 
-$cmd = "cp $options{output_dir}/xDocs/* $persistent_outdir/xDocs";
-system($cmd);
-
-$cmd = "cp $options{output_dir}/idFiles/* $persistent_outdir/idFiles";
-system($cmd);
+if (-d $options{output_dir}."/idFiles") {
+    $cmd = "cp $options{output_dir}/idFiles/* $persistent_outdir/idFiles";
+    system($cmd);
+}
 
 #####################################################################
 ## Print out the version control info to the version_info.txt file ##

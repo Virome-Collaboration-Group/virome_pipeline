@@ -86,7 +86,7 @@ use lib ("/var/www/html/cgi") ;
 use Ergatis::ConfigFile;
 use Ergatis::SavedPipeline;
 
-END { _log("The program ran for " . time() - $^T . " seconds"); }
+END { _log("The program ran for " . (time() - $^T) . " seconds"); }
 
 my %options = ();
 my $results = GetOptions (\%options,
@@ -132,7 +132,7 @@ print "DEBUG VALUE: " .$options{debug}. "\n";
 my $version_info = parse_version_info();
 
 my $template = Ergatis::SavedPipeline->new(
-               template => "$options{template_directory}/pipeline.layout");
+               template => "$options{template_directory}/pipeline.complete.layout");
 
 my $pipeline = $template->write_pipeline( repository_root => $options{repository_root},
                                           id_repository => $options{id_repository} );

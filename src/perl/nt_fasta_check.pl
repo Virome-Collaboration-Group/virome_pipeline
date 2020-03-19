@@ -123,10 +123,10 @@ $total_actg = sprintf("%.2f", ($total_actg/$total_size)*100);
 $total_ncount = sprintf("%.2f", ($total_ncount/$total_size)*100);
 $total_invalid_bases = sprintf("%.2f", ($total_invalid_bases/$total_size)*100);
 
-print STATS "Freq. ACTG: " . $total_actg . "\n";
-print STATS "Freq. N: " . $total_ncount . "\n";
-print STATS "Invalid Bases: " . $total_invalid_bases ."\n";
-print STATS "Total number of Bases: " . $total_size."\n";
+print STATS "Freq. ACTG: " . $total_actg;
+print STATS "Freq. N: " . $total_ncount;
+print STATS "Invalid Bases: " . $total_invalid_bases;
+print STATS "Total number of Bases: " . $total_size;
 
 close(FOUT);
 close(REF);
