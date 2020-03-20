@@ -130,14 +130,14 @@ $Fasta{$h} = $s;
 my $file = `egrep "$options{prefix}\\." $options{mga}`;   # modified 4/4/11 SWP
 chomp($file);
 
-unless (length($file)){
+unless (length($file)) {
     $logger->logdie("No metagene output file for $options{prefix}");
     exit(1);
 }
 
 # NODE_1_length_56803_cov_57.912_g0_i0_420_4775_1 size=1452 gc=0.302607 start=420 stop=4775 strand=+ frame=0 model=self score=844.516 type=complete caller=MetaGENE
 
-open(PEP, ">" , "$options{outdir}/$options{prefix}.pep") || $logger->logdie("Cannot write to: $options{outdir}/$options{prefix}.pep");
+open(PEP, ">", "$options{outdir}/$options{prefix}.pep") || $logger->logdie("Cannot write to: $options{outdir}/$options{prefix}.pep");
 open(NUC, ">", "$options{outdir}/$options{prefix}.nuc") || $logger->logdie("Cannot write to: $options{outdir}/$options{prefix}.nuc");
 
 open(IN, "<", $file) || $logger->logdie("Cannot open the mga file: $file");

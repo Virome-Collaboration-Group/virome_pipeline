@@ -152,6 +152,7 @@ foreach my $table (@tables) {
     $cmd = "sed -i '1s/^/#/' $persistent_outdir/$table.tab";
     system($cmd);
 }
+
 if (-d $options{output_dir}."/xDocs") {
     $cmd = "cp $options{output_dir}/xDocs/* $persistent_outdir/xDocs";
     system($cmd);
@@ -161,6 +162,39 @@ if (-d $options{output_dir}."/idFiles") {
     $cmd = "cp $options{output_dir}/idFiles/* $persistent_outdir/idFiles";
     system($cmd);
 }
+
+#### create metagenome pep and nuc fasta file.
+#### expected output dir is
+#### $;REPOSITORY_ROOT$;/output_repository/gen_lib_stats/$;PIPELINEID$;_default
+my $pep_list = $options{output_dir};
+$pep_list =~ s/gen_lib.*//;
+$pep_list .= "mga2seq_pep/" . $options{pipelineid} . "_default/mga2seq_pep.pep.list";
+
+my $nuc_list = $options{output_dir};
+$nuc_list =~ s/gen_lib.*//;
+$nuc_list .= "mga2seq_pep/" . $options{pipelineid} . "_default/mga2seq_pep.nuc.list";
+
+#### create empty output file to hold a seq.
+system("touch $persistent_outdir/metagene_orf.fna");
+system("touch $persistent_outdir/metagene_orf.fnn");
+
+open(FHD, "<", $pep_list) || die "\nCould not open Metagene output file ${pep_list}\n";
+while(<FHD>){
+    chomp $_;
+
+    $cmd = "cat $_ >> $persistent_outdir/metagene_orf.fna";
+    system($cmd);
+}
+close(FHD);
+
+open(FHD, "<", $nuc_list) || die "\nCould not open Metagene output file ${nuc_list}\n";
+while(<FHD>){
+    chomp $_;
+
+    $cmd = "cat $_ >> $persistent_outdir/metagene_orf.fnn";
+    system($cmd);
+}
+close(FHD);
 
 #####################################################################
 ## Print out the version control info to the version_info.txt file ##
