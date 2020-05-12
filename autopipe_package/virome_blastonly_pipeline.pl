@@ -163,10 +163,11 @@ $init_db_config->RewriteConfig();
 
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/results/" . $pipeline->id . "_default/results.blastonly.user.config");
+    -file => "$options{repository_root}/workflow/runtime/results/" . $pipeline->id . "_blastonly/results.blastonly.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta);
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
+$dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
 $dump_db_config->RewriteConfig();
 
 #### $fasta_size_filter
@@ -259,7 +260,7 @@ foreach my $token (@array) {
 
 #### database dump sqlite3 location
 undef @array;
-@array = qw(results tRNAscan-prep);
+@array = qw(tRNAscan-prep);
 foreach my $component (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
