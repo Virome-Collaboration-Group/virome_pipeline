@@ -132,7 +132,7 @@ print "DEBUG VALUE: " .$options{debug}. "\n";
 my $version_info = parse_version_info();
 
 my $template = Ergatis::SavedPipeline->new(
-               template => "$options{template_directory}/pipeline.blastonly.layout");
+               template => "$options{template_directory}/pipeline.complete.layout");
 
 my $pipeline = $template->write_pipeline( repository_root => $options{repository_root},
                                           id_repository => $options{id_repository} );
@@ -140,106 +140,43 @@ my $pipeline = $template->write_pipeline( repository_root => $options{repository
 open($logfh, ">", "$output_dir/logs/$pipeline->{'id'}.analytic") or
     die "Could not open file to write error log $output_dir/logs/$pipeline->{'id'}.analytic\n";
 
-_log("VIROME Analysis Pipeline analytics.");
+_log("VIROME Post BLAST Analysis Pipeline analytics.");
 _log("Start time: " . format_time());
-_log("Version info: " . $version_info->{version} . " build date: " . $version_info->{date});
-_log("Input file name: " . $fasta);
-_log("Input file size: " . sprintf("%.2f", ((-s $fasta)/(1024 * 1024))) . "MB");
-
-my $no_of_seq = `grep -c "^>" $fasta`;
-chomp $no_of_seq;
-
-_log("Number of raw input seq: " . $no_of_seq);
+# _log("Version info: " . $version_info->{version} . " build date: " . $version_info->{date});
+# _log("Input file name: " . $fasta);
+# _log("Input file size: " . sprintf("%.2f", ((-s $fasta)/(1024 * 1024))) . "MB");
+#
+# my $no_of_seq = `grep -c "^>" $fasta`;
+# chomp $no_of_seq;
+#
+# _log("Number of raw input seq: " . $no_of_seq);
 
 ## here you can use Ergatis::ConfigFiles to edit some of the newly-written
 ##  component configurations before pipeline execution.  One example is shown.
 ##  naming and path conventions allow you to know where the component file is
 
-#### set output dir for init-db
-my $init_db_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/init-db/" . $pipeline->id . "_default/init-db.default.user.config");
-$init_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir );
-$init_db_config->RewriteConfig();
 
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/results/" . $pipeline->id . "_default/results.blastonly.user.config");
+    -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta);
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
 $dump_db_config->RewriteConfig();
 
-#### $fasta_size_filter
-my $fasta_size_filter_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/fasta_size_filter/" . $pipeline->id . "_default/fasta_size_filter.default.user.config");
-$fasta_size_filter_config->setval('input', '$;INPUT_FILE$;', $fasta );
-$fasta_size_filter_config->RewriteConfig();
-
-#### set univec subject database name and path
-my $univec_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_univec/ncbi-blastn-plus.univec.user.config");
-$univec_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{univec});
-$univec_config->RewriteConfig();
-
-#### set rRNA subject database name and path
-my $rna_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/ncbi-blastn-plus/" . $pipeline->id . "_rna/ncbi-blastn-plus.rna.user.config");
-$rna_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{rna});
-$rna_config->RewriteConfig();
-
-#### set max threads limit for rubble blast, subject database name and database path
-my $uniref_rubble_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_uniref/rubble.uniref.user.config");
-$uniref_rubble_config->setval('parameters', '$;THREADS$;', $options{threads} );
-$uniref_rubble_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{uniref} );
-$uniref_rubble_config->setval('parameters', '$;DATABASE_CLUST_PATH$;', '/opt/database/' . $version_info->{uniref_clust} );
-$uniref_rubble_config->setval('parameters', '$;LOOKUP$;', '/opt/database/' . $version_info->{uniref_lookup} );
-$uniref_rubble_config->RewriteConfig();
-
-my $mgol_rubble_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/rubble/" . $pipeline->id . "_mgol/rubble.mgol.user.config");
-$mgol_rubble_config->setval('parameters', '$;THREADS$;', $options{threads} );
-$mgol_rubble_config->setval('parameters', '$;DATABASE_PATH$;', '/opt/database/' . $version_info->{mgol} );
-$mgol_rubble_config->setval('parameters', '$;DATABASE_CLUST_PATH$;', '/opt/database/' . $version_info->{mgol_clust} );
-$mgol_rubble_config->setval('parameters', '$;LOOKUP$;', '/opt/database/' . $version_info->{mgol_lookup} );
-$mgol_rubble_config->RewriteConfig();
-
-my $tRNAscan_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/tRNAscan-SE/" . $pipeline->id . "_default/tRNAscan-SE.default.user.config");
-$tRNAscan_config->setval('parameters', '$;THREADS$;', $options{threads} );
-$tRNAscan_config->RewriteConfig();
-
-
-#### point to PERSISTENT_STORAGE sqlite3 file
-my @array = qw(mgol rna uniref univec);
-foreach my $token (@array) {
-    my $pstore_config = new Ergatis::ConfigFile(
-        -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");
-    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
-    $pstore_config->RewriteConfig();
-}
-
-#### clean_expand_btab sqlite3 file location
-foreach my $token (@array) {
-    my $pstore_config = new Ergatis::ConfigFile(
-        -file => "$options{repository_root}/workflow/runtime/clean_expand_btab/" . $pipeline->id . "_${token}/clean_expand_btab.${token}.user.config");
-    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
-    $pstore_config->RewriteConfig();
-}
-
 #### stats script sqlite3 file location
-# undef @array;
-# @array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
-# foreach my $component (@array) {
-#     my $stats_config = new Ergatis::ConfigFile(
-#         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
-#     $stats_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
-#     $stats_config->RewriteConfig();
-# }
+undef @array;
+@array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
+foreach my $component (@array) {
+    my $stats_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
+    $stats_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
+    $stats_config->RewriteConfig();
+}
 
 #### db_upload script sqlite3 file location
 undef @array;
-@array = qw(orf_nuc orf_pep rna-blast sequence_read sequence_relationship sequence_rna trna univec-blast);
+@array = qw(blastp_mgol blastp_uniref orfan);
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_${token}/db-upload.${token}.user.config");
@@ -247,19 +184,9 @@ foreach my $token (@array) {
     $pstore_config->RewriteConfig();
 }
 
-#### sequence-prep sqlite3 file location
-undef @array;
-@array = qw(orf_pep orf_nuc rna-clean rna);
-foreach my $token (@array) {
-    my $pstore_config = new Ergatis::ConfigFile(
-        -file => "$options{repository_root}/workflow/runtime/sequence-prep/" . $pipeline->id . "_${token}/sequence-prep.${token}.user.config");
-    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
-    $pstore_config->RewriteConfig();
-}
-
 #### database dump sqlite3 location
 undef @array;
-@array = qw(results tRNAscan-prep);
+@array = qw(dump_db);
 foreach my $component (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
@@ -267,12 +194,11 @@ foreach my $component (@array) {
     $pstore_config->RewriteConfig();
 }
 
-#### sequence_relationship-prep sqlite3 location
-my $pstore_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/sequence_relationship-prep/" . $pipeline->id . "_default/sequence_relationship-prep.default.user.config");
-$pstore_config->setval('input', '$;INPUT_FILE$;', $output_dir . '/processing.sqlite3' );
-$pstore_config->RewriteConfig();
-
+#### fxnal database lookup file
+my $fxnal_per_db_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/fxnal_bin_per_db/" . $pipeline->id . "_default/fxnal_bin_per_db.default.user.config");
+$fxnal_per_db_config->setval('parameters', '$;LOOKUP_DB$;', '/opt/database/' . $version_info->{fxn_lookup} );
+$fxnal_per_db_config->RewriteConfig();
 
 ## Get ready to rumble . . .
 my $ergatis_cfg = new Ergatis::ConfigFile( -file => $options{ergatis_ini} );
@@ -323,62 +249,62 @@ if (! $success) {
     #### pipeline ended in success collect few more data points.
 
     #### extract number of orfs
-    my $dir = "$options{repository_root}/output_repository/mga2seq_pep/1_default/i1/g1";
-
-    opendir(DIR, "$dir") or die "Could open directry $dir";
-    while( ($filename = readdir(DIR))) {
-       if ($filename =~ /\.pep$/) {
-           my $no_of_orf = `grep -c "^>" $dir/$filename`;
-           chomp $no_of_orf;
-
-           _log("Number of ORFs: " . $no_of_orf);
-           my $v = "$dir/$filename";
-           _log("File size of ORFs: " . sprintf("%.2f", ((-s $v)/(1024 * 1024))) . "MB");
-       }
-    }
-    closedir(DIR);
-
-    #### read and write read/contig stats
-    $dir = "$options{repository_root}/output_repository/nt_fasta_check/1_default/i1/g1";
-
-    opendir(DIR, "$dir") or die "Could open directry $dir";
-    while( ($filename = readdir(DIR))) {
-       if ($filename =~ /\.stats$/) {
-           open(S, "<", "$dir/$filename") or die "Could not open file $dir/$filename\n";
-           while(<S>) {
-               _log($_);
-           }
-           close(S);
-       }
-    }
-    closedir(DIR);
-
-    #### blastp uniref output
-    $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_uniref/i1/g1";
-
-    opendir(DIR, "$dir") or die "Could open directry $dir";
-    while( ($filename = readdir(DIR))) {
-       if ($filename =~ /\.btab/) {
-           my $len = `wc -l $dir/$filename`;
-           chomp $len;
-
-           _log("Number of BLASTP rows (UNIREF100P): " . $len . "\n");
-       }
-    }
-    closedir(DIR);
-
-    $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_mgol/i1/g1";
-
-    opendir(DIR, "$dir") or die "Could open directry $dir";
-    while( ($filename = readdir(DIR))) {
-       if ($filename =~ /\.btab/) {
-           my $len = `wc -l $dir/$filename`;
-           chomp $len;
-
-           _log("Number of BLASTP rows (MGOL): " . $len . "\n");
-       }
-    }
-    closedir(DIR);
+    # my $dir = "$options{repository_root}/output_repository/mga2seq_pep/1_default/i1/g1";
+    #
+    # opendir(DIR, "$dir") or die "Could open directry $dir";
+    # while( ($filename = readdir(DIR))) {
+    #    if ($filename =~ /\.pep$/) {
+    #        my $no_of_orf = `grep -c "^>" $dir/$filename`;
+    #        chomp $no_of_orf;
+    #
+    #        _log("Number of ORFs: " . $no_of_orf);
+    #        my $v = "$dir/$filename";
+    #        _log("File size of ORFs: " . sprintf("%.2f", ((-s $v)/(1024 * 1024))) . "MB");
+    #    }
+    # }
+    # closedir(DIR);
+    #
+    # #### read and write read/contig stats
+    # $dir = "$options{repository_root}/output_repository/nt_fasta_check/1_default/i1/g1";
+    #
+    # opendir(DIR, "$dir") or die "Could open directry $dir";
+    # while( ($filename = readdir(DIR))) {
+    #    if ($filename =~ /\.stats$/) {
+    #        open(S, "<", "$dir/$filename") or die "Could not open file $dir/$filename\n";
+    #        while(<S>) {
+    #            _log($_);
+    #        }
+    #        close(S);
+    #    }
+    # }
+    # closedir(DIR);
+    #
+    # #### blastp uniref output
+    # $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_uniref/i1/g1";
+    #
+    # opendir(DIR, "$dir") or die "Could open directry $dir";
+    # while( ($filename = readdir(DIR))) {
+    #    if ($filename =~ /\.btab/) {
+    #        my $len = `wc -l $dir/$filename`;
+    #        chomp $len;
+    #
+    #        _log("Number of BLASTP rows (UNIREF100P): " . $len . "\n");
+    #    }
+    # }
+    # closedir(DIR);
+    #
+    # $dir = "$options{repository_root}/output_repository/clean_expand_btab/1_mgol/i1/g1";
+    #
+    # opendir(DIR, "$dir") or die "Could open directry $dir";
+    # while( ($filename = readdir(DIR))) {
+    #    if ($filename =~ /\.btab/) {
+    #        my $len = `wc -l $dir/$filename`;
+    #        chomp $len;
+    #
+    #        _log("Number of BLASTP rows (MGOL): " . $len . "\n");
+    #    }
+    # }
+    # closedir(DIR);
 }
 
 #print Dumper(\$pipeline->{'diagnostics'});

@@ -1,0 +1,63 @@
+<commandSetRoot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="commandSet.xsd" type="instance">
+    <commandSet type="serial">
+        <state>incomplete</state>
+        <name>start</name>
+
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.blastp_uniref</name>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>db-upload.blastp_mgol</name>
+            </commandSet>
+        </commandSet>
+
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>gen_lib_stats.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>env_lib_stats.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>sequence_classification.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>taxonomy_binning.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>fxnal_bin_per_db.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>fxnal_bin_all_db.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>libraryHistogram.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>orfan.default</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>db-upload.orfan</name>
+        </commandSet>
+        <commandSet type="serial">
+            <state>incomplete</state>
+            <name>dump_db.default</name>
+        </commandSet>
+    </commandSet>
+</commandSetRoot>
