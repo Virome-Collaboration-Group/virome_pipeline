@@ -163,7 +163,7 @@ $init_db_config->RewriteConfig();
 
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/results/" . $pipeline->id . "_blastonly/results.blastonly.user.config");
+    -file => "$options{repository_root}/workflow/runtime/results_blastonly/" . $pipeline->id . "_default/results_blastonly.default.user.config");
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta);
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});

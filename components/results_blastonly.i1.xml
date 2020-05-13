@@ -6,9 +6,9 @@
         <!--Processing-->
         <command>
             <type>RunUnixCommand</type>
-            <name>results.blastonly</name>
+            <name>results_blastonly</name>
             <state>incomplete</state>
-            <executable>$;RESULTS.BLASTONLY$;</executable>
+            <executable>$;RESULTS_BLASTONLY$;</executable>
             <arg>-i $;I_FILE_PATH$; -o $;OUTPUT_DIRECTORY$; -m $;MGOL_VERSION$; -u $;UNIREF_VERSION$; -p $;PIPELINE_VERSION$; -r $;PIPELINEID$; -b $;DATABASE_FILE$; -s $;PERSISTENT_STORAGE$; -v $;VERBOSE63$;</arg>
             <param>
                 <key>stderr</key>
