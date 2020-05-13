@@ -166,8 +166,7 @@ $dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/proce
 $dump_db_config->RewriteConfig();
 
 #### stats script sqlite3 file location
-undef @array;
-@array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
+my @array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
 foreach my $component (@array) {
     my $stats_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
