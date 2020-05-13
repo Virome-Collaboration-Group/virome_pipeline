@@ -262,7 +262,7 @@ exit(0);
 
 ###############################################################################
 sub check_parameters {
-    my @required = qw(input mgol uniref pipeline pipelineid database output_dir);
+    my @required = qw(mgol uniref pipeline pipelineid database output_dir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {
