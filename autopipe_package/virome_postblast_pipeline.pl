@@ -90,7 +90,7 @@ END { _log("The program ran for " . (time() - $^T) . " seconds"); }
 
 my %options = ();
 my $results = GetOptions (\%options,
-                          'input_dir|i=s',
+                          'input_dir|f=s',
                           'template_directory|t=s',
                           'repository_root|r=s',
                           'id_repository|i=s',
