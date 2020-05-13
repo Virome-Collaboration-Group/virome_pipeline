@@ -132,7 +132,7 @@ print "DEBUG VALUE: " .$options{debug}. "\n";
 my $version_info = parse_version_info();
 
 my $template = Ergatis::SavedPipeline->new(
-               template => "$options{template_directory}/pipeline.complete.layout");
+               template => "$options{template_directory}/pipeline.postblast.layout");
 
 my $pipeline = $template->write_pipeline( repository_root => $options{repository_root},
                                           id_repository => $options{id_repository} );
@@ -159,7 +159,7 @@ _log("Start time: " . format_time());
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
-$dump_db_config->setval('input', '$;INPUT_DIRECTORY;', $output_dir);
+$dump_db_config->setval('input', '$;INPUT_DIRECTORY$;', $output_dir);
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
 $dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
@@ -187,13 +187,13 @@ foreach my $token (@array) {
 #### set uniref input file
 my $db_upload_uniref_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
-$db_upload_uniref_config->setval('input', '$;INPUT_FILE_LIST;', '' );
+$db_upload_uniref_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
 $db_upload_uniref_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_uniref.tab' );
 $db_upload_uniref_config->RewriteConfig();
 
 my $db_upload_mgol_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
-$db_upload_mgol_config->setval('input', '$;INPUT_FILE_LIST;', '' );
+    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_mgol/db-upload.blastp_mgol.user.config");
+$db_upload_mgol_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
 $db_upload_mgol_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_mgol.tab' );
 $db_upload_mgol_config->RewriteConfig();
 
