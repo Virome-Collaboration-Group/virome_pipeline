@@ -90,7 +90,7 @@ END { _log("The program ran for " . (time() - $^T) . " seconds"); }
 
 my %options = ();
 my $results = GetOptions (\%options,
-                          'fasta|f=s',
+                          'input_dir|i=s',
                           'template_directory|t=s',
                           'repository_root|r=s',
                           'id_repository|i=s',
@@ -119,11 +119,11 @@ my $logfh;
 ##############################
 ## important bits here
 ##############################
-my $fasta = $options{'fasta'};
+#my $fasta = $options{'fasta'};
 my $cmd = "";
 
-my $filename = fileparse($fasta, qr/\.[^.]*/);
-my $output_dir = "/opt/output/". $filename ."_". timestamp();
+#my $filename = fileparse($fasta, qr/\.[^.]*/);
+my $output_dir = $options{input_dir}; #"/opt/output/". $filename ."_". timestamp();
 
 print "DEBUG VALUE: " .$options{debug}. "\n";
 
@@ -162,6 +162,7 @@ my $dump_db_config = new Ergatis::ConfigFile(
 $dump_db_config->setval('input', '$;INPUT_FILE$;', $fasta);
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
+$dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
 $dump_db_config->RewriteConfig();
 
 #### stats script sqlite3 file location
@@ -184,15 +185,18 @@ foreach my $token (@array) {
     $pstore_config->RewriteConfig();
 }
 
-#### database dump sqlite3 location
-undef @array;
-@array = qw(dump_db);
-foreach my $component (@array) {
-    my $pstore_config = new Ergatis::ConfigFile(
-        -file => "$options{repository_root}/workflow/runtime/${component}/" . $pipeline->id . "_default/${component}.default.user.config");
-    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
-    $pstore_config->RewriteConfig();
-}
+#### set uniref input file
+my $db_upload_uniref_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
+$db_upload_uniref_config->setval('input', '$;INPUT_FILE_LIST;', '' );
+$db_upload_uniref_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_uniref.tab' );
+$db_upload_uniref_config->RewriteConfig();
+
+my $db_upload_mgol_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
+$db_upload_mgol_config->setval('input', '$;INPUT_FILE_LIST;', '' );
+$db_upload_mgol_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_mgol.tab' );
+$db_upload_mgol_config->RewriteConfig();
 
 #### fxnal database lookup file
 my $fxnal_per_db_config = new Ergatis::ConfigFile(
@@ -327,7 +331,7 @@ sub _log {
 ###############################################################################
 sub check_parameters {
     #### make sure required arguments were passed
-    my @required = qw( template_directory repository_root id_repository ergatis_ini fasta);
+    my @required = qw( template_directory repository_root id_repository ergatis_ini input_dir);
 
     foreach my $key (@required) {
         unless ($options{$key}) {
