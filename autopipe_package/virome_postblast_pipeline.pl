@@ -122,8 +122,12 @@ my $logfh;
 #my $fasta = $options{'fasta'};
 my $cmd = "";
 
-#my $filename = fileparse($fasta, qr/\.[^.]*/);
-my $output_dir = $options{input_dir}; #"/opt/output/". $filename ."_". timestamp();
+my $filename = fileparse($input_dir);
+
+#### filename should to of form
+#### somename_timestamp (extract just somename)
+$filename = split("_", $filename)[-1]
+my $output_dir = "/opt/output/". $filename ."_". timestamp();
 
 print "DEBUG VALUE: " .$options{debug}. "\n";
 
@@ -159,7 +163,7 @@ _log("Start time: " . format_time());
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/dump_db/" . $pipeline->id . "_default/dump_db.default.user.config");
-$dump_db_config->setval('input', '$;INPUT_DIRECTORY$;', $output_dir);
+$dump_db_config->setval('input', '$;INPUT_DIRECTORY$;', $options{input_dir});
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
 $dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
