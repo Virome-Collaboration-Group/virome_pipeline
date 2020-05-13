@@ -252,8 +252,8 @@ if (-e "$persistent_outdir.tar" ) {
 }
 
 #### create tar without /opt/output in the path.
-$cmd = "tar --exclude=\"$dirname/logs\" --exclude=\"$dirname/processing.sqlite3\"";
-$cmd .= " -czvf $persistent_outdir.tar.gz -C /opt/output $dirname";
+#$cmd = "tar --exclude=\"$dirname/logs\" --exclude=\"$dirname/processing.sqlite3\"";
+$cmd = "tar -czvf $persistent_outdir.tar.gz -C /opt/output $dirname";
 system($cmd);
 print STDOUT "Debug: " . $cmd;
 
