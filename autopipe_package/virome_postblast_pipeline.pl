@@ -122,12 +122,13 @@ my $logfh;
 #my $fasta = $options{'fasta'};
 my $cmd = "";
 
-my $filename = fileparse($input_dir);
+#my $filename = fileparse($options{input_dir});
 
 #### filename should to of form
 #### somename_timestamp (extract just somename)
-$filename = split("_", $filename)[-1]
-my $output_dir = "/opt/output/". $filename ."_". timestamp();
+#my @f = split(/_/, $filename);
+#$filename = join("_", @f[0..$#f-1]);
+my $output_dir = $options{input_dir}; #"/opt/output/". $filename ."_". timestamp();
 
 print "DEBUG VALUE: " .$options{debug}. "\n";
 

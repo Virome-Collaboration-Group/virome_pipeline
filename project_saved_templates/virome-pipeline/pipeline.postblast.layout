@@ -57,7 +57,7 @@
         </commandSet>
         <commandSet type="serial">
             <state>incomplete</state>
-            <name>dump_db.default</name>
+            <name>results_postblast.default</name>
         </commandSet>
     </commandSet>
 </commandSetRoot>
