@@ -220,6 +220,8 @@ foreach my $token (@array) {
     $pstore_config->RewriteConfig();
 }
 
+push @array, "uniref";
+push @array, "mgol";
 #### clean_expand_btab sqlite3 file location
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
