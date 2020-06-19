@@ -180,13 +180,13 @@ foreach my $token (@array) {
 }
 
 my $brp_uniref_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
+    -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_uniref/blast-result-prep.uniref.user.config");
 $brp_uniref_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
 $brp_uniref_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_uniref.tab' );
 $brp_uniref_config->RewriteConfig();
 
 my $brp_mgol_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_mgol/db-upload.blastp_mgol.user.config");
+    -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_mgol/blast-result-prep.mgol.user.config");
 $brp_mgol_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
 $brp_mgol_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_mgol.tab' );
 $brp_mgol_config->RewriteConfig();
