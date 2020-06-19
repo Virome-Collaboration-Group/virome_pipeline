@@ -68,6 +68,7 @@ BEGIN {
 ##############################################################################
 my %options = ();
 my $results = GetOptions (\%options,
+                          'input|i=s',
 						  'output_dir|o=s',
 						  'mgol|m=s',
                           'uniref|u=s',

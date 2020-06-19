@@ -164,7 +164,7 @@ _log("Start time: " . format_time());
 #### final dump input file setup
 my $dump_db_config = new Ergatis::ConfigFile(
     -file => "$options{repository_root}/workflow/runtime/results_postblast/" . $pipeline->id . "_default/results_postblast.default.user.config");
-$dump_db_config->setval('input', '$;INPUT_DIRECTORY$;', $options{input_dir});
+$dump_db_config->setval('input', '$;INPUT_FILE$;', $options{input_dir});
 $dump_db_config->setval('parameters', '$;PERSISTENT_STORAGE$;', $output_dir);
 $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
 $dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
