@@ -170,6 +170,27 @@ $dump_db_config->setval('parameters', '$;VERBOSE63$;', $options{debug});
 $dump_db_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
 $dump_db_config->RewriteConfig();
 
+#### point to PERSISTENT_STORAGE sqlite3 file
+my @array = qw(uniref mgol);
+foreach my $token (@array) {
+    my $pstore_config = new Ergatis::ConfigFile(
+        -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");
+    $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
+    $pstore_config->RewriteConfig();
+}
+
+my $brp_uniref_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
+$brp_uniref_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
+$brp_uniref_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_uniref.tab' );
+$brp_uniref_config->RewriteConfig();
+
+my $brp_mgol_config = new Ergatis::ConfigFile(
+    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_mgol/db-upload.blastp_mgol.user.config");
+$brp_mgol_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
+$brp_mgol_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_mgol.tab' );
+$brp_mgol_config->RewriteConfig();
+
 #### stats script sqlite3 file location
 my @array = qw(env_lib_stats fxnal_bin_all_db fxnal_bin_per_db gen_lib_stats libraryHistogram orfan sequence_classification taxonomy_binning);
 foreach my $component (@array) {
@@ -188,19 +209,6 @@ foreach my $token (@array) {
     $pstore_config->setval('parameters', '$;DATABASE_FILE$;', $output_dir . '/processing.sqlite3' );
     $pstore_config->RewriteConfig();
 }
-
-#### set uniref input file
-my $db_upload_uniref_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_uniref/db-upload.blastp_uniref.user.config");
-$db_upload_uniref_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
-$db_upload_uniref_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_uniref.tab' );
-$db_upload_uniref_config->RewriteConfig();
-
-my $db_upload_mgol_config = new Ergatis::ConfigFile(
-    -file => "$options{repository_root}/workflow/runtime/db-upload/" . $pipeline->id . "_blastp_mgol/db-upload.blastp_mgol.user.config");
-$db_upload_mgol_config->setval('input', '$;INPUT_FILE_LIST$;', '' );
-$db_upload_mgol_config->setval('input', '$;INPUT_FILE$;', $options{input_dir} . '/blast_mgol.tab' );
-$db_upload_mgol_config->RewriteConfig();
 
 #### fxnal database lookup file
 my $fxnal_per_db_config = new Ergatis::ConfigFile(

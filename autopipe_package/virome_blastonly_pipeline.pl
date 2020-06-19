@@ -212,7 +212,7 @@ $tRNAscan_config->RewriteConfig();
 
 
 #### point to PERSISTENT_STORAGE sqlite3 file
-my @array = qw(mgol rna uniref univec);
+my @array = qw(univec rna);
 foreach my $token (@array) {
     my $pstore_config = new Ergatis::ConfigFile(
         -file => "$options{repository_root}/workflow/runtime/blast-result-prep/" . $pipeline->id . "_${token}/blast-result-prep.${token}.user.config");

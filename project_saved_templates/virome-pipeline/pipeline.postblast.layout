@@ -7,12 +7,20 @@
             <state>incomplete</state>
             <commandSet type="serial">
                 <state>incomplete</state>
+                <name>blast-result-prep.uniref</name>
+            </commandSet>
+            <commandSet type="serial">
+                <state>incomplete</state>
                 <name>db-upload.blastp_uniref</name>
             </commandSet>
         </commandSet>
 
         <commandSet type="serial">
             <state>incomplete</state>
+            <commandSet type="serial">
+                <state>incomplete</state>
+                <name>blast-result-prep.mgol</name>
+            </commandSet>
             <commandSet type="serial">
                 <state>incomplete</state>
                 <name>db-upload.blastp_mgol</name>

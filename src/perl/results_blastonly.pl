@@ -176,11 +176,11 @@ $nuc_list .= "mga2seq_pep/" . $options{pipelineid} . "_default/mga2seq_pep.nuc.l
 
 my $uniref_list = $options{output_dir};
 $uniref_list =~ s/gen_lib.*//;
-$uniref_list .= "blast-result-prep/" . $options{pipelineid} . "_uniref/blast-result-prep.txt.list";
+$uniref_list .= "clean_expand_btab/" . $options{pipelineid} . "_uniref/clean_expand_btab.modified.list";
 
 my $mgol_list = $options{output_dir};
 $mgol_list =~ s/gen_lib.*//;
-$mgol_list .= "blast-result-prep/" . $options{pipelineid} . "_mgol/blast-result-prep.txt.list";
+$mgol_list .= "clean_expand_btab/" . $options{pipelineid} . "_mgol/clean_expand_btab.modified.list";
 
 #### create empty output file to hold a seq.
 system("touch $persistent_outdir/metagene_orf.fna");
