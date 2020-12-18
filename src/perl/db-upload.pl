@@ -109,7 +109,7 @@ $cmd = "sqlite3 $options{database} < $options{output_dir}/$options{table}";
 
 system($cmd);
 
-if (( $? >> 8 ) != 0 ){
+if (( $? >> 8 ) != 0 ) {
 	print STDERR "command failed: $!\n";
 	print STDERR $cmd."\n";
 	exit($?>>8);

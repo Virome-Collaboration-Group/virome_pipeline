@@ -107,6 +107,8 @@ $r_node->{name} = "root";
 $r_node->{value} = 1;
 $r_node->{id_list} = "NA";
 
+my $tree = Tree::Nary->new($r_node);
+
 #### process list for each functional database
 foreach my $db (@dbArray){
 	print "\tProcessing db $db\n";
@@ -115,7 +117,7 @@ foreach my $db (@dbArray){
     load_subject_db($db);
 
 	#### create new tree
-	my $tree = Tree::Nary->new($r_node);
+	$tree = Tree::Nary->new($r_node);
 	my $blst_qry = $dbh->prepare($blst_stmt);
 	$blst_qry->execute($libId, $db);
 
@@ -127,7 +129,8 @@ foreach my $db (@dbArray){
 		} else {
 			$local_tree = createLocalTreeR($$hits{hit_name}, $$hits{sequenceId}, $$hits{database_name});
 		}
-		$tree = fuse_tree($tree,$local_tree);
+		#$tree = fuse_tree($tree,$local_tree);
+        fuse_tree($local_tree);
 	}
 
 	my $xDoc;
@@ -333,7 +336,8 @@ sub node_child_exist {
 
 ###############################################################################
 sub fuse_tree {
-	my ($tree, $local) = (shift, shift);
+	#my ($tree, $local) = (shift, shift);
+    my ($local) = (shift);
 
 	if (Tree::Nary->is_root($tree) && Tree::Nary->is_leaf($tree)){
 		return $local;
@@ -364,7 +368,7 @@ sub fuse_tree {
 		}
 	}
 
-	return $tree;
+	#return $tree;
 }
 
 ###############################################################################

@@ -114,6 +114,7 @@ my $rslt = $tax_sel->fetchall_arrayref({});
 my $taxStruct;
 
 my $tStruct = {};
+
 foreach my $rec (@$rslt){
 	if (!length($rec->{'domain'})){
 		$rec->{'domain'} = "UNKNOWN DOMAIN";
@@ -135,7 +136,7 @@ foreach my $rec (@$rslt){
 		$rec->{'organism'} = "UNKNOWN ORGANISM";
 	}
 
-	$tStruct = createStruct($tStruct, $rec, $rec->{'sequenceId'});
+	createStruct(\$tStruct, \$rec);
 }
 
 my $xml_file = "TAXONOMY_XMLDOC_".$libId.".xml";
@@ -153,7 +154,7 @@ $id_writer->xmlDecl("UTF-8");
 $xml_writer->startTag("root");
 $id_writer->startTag("root");
 
-($xml_writer, $id_writer) = printStruct($tStruct, $xml_writer, $id_writer, $id_file);
+($xml_writer, $id_writer) = printStruct(\$tStruct, $id_file);
 
 $xml_writer->endTag("root");
 $id_writer->endTag("root");
@@ -202,7 +203,9 @@ sub timer {
 
 ###############################################################################
 sub createStruct{
-    my ($taxStruct, $lineage, $seqId) = @_;
+    my ($taxStruct, $lineage) = shift, shift;
+
+    my $seqId = $lineage->{'sequenceId'};
 
     #check for domain. if it exist increment counter by 1.  if not
     #add domain and since the first time, kingdom..3 are also not defined
@@ -469,19 +472,17 @@ sub createStruct{
 						    }
 					};
     }
-
-    return $taxStruct;
 }
 ###############################################################################
 sub printStruct{
-    my ($tStruct, $xw, $iw, $fname) = @_;
+    my ($tStruct, $xml_writer, $id_writer, $fname) = shift, shift;
 
     my $tag = 1;
 
     for my $domain ( sort keys %$tStruct ) {
 	#print "DOMAIN: $domain --> $tStruct->{$domain}->{'count'}\n";
-	$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$tStruct->{$domain}->{'idList'});
-	$xw->startTag('DOMAIN', 'LABEL'=>$domain,
+	$id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$tStruct->{$domain}->{'idList'});
+	$xml_writer->startTag('DOMAIN', 'LABEL'=>$domain,
 				    'NAME'=>$domain,
 				    'VALUE'=>$tStruct->{$domain}->{'count'},
 				    'IDFNAME'=>$fname,
@@ -491,8 +492,8 @@ sub printStruct{
 
 	for my $kingdom ( sort keys %$f2 ) {
 	    #print "\tFxn2: $kingdom--> $f2->{ $kingdom}->{'count'}\n";
-	    $iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f2->{$kingdom}->{'idList'});
-	    $xw->startTag('KINGDOM', 'LABEL'=>$kingdom,
+	    $id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f2->{$kingdom}->{'idList'});
+	    $xml_writer->startTag('KINGDOM', 'LABEL'=>$kingdom,
 					'NAME'=>$kingdom,
 					'VALUE'=>$f2->{$kingdom}->{'count'},
 					'IDFNAME'=>$fname,
@@ -502,8 +503,8 @@ sub printStruct{
 
 	    for my $phylum ( sort keys %$f3 ) {
 		#print "\t\tFxn3: $phylum --> $f3->{$phylum}->{'count'}\n";
-		$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f3->{$phylum}->{'idList'});
-		$xw->startTag('PHYLUM', 'LABEL'=>$phylum,
+		$id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f3->{$phylum}->{'idList'});
+		$xml_writer->startTag('PHYLUM', 'LABEL'=>$phylum,
 					    'NAME'=>$phylum,
 					    'VALUE'=>$f3->{$phylum}->{'count'},
 					    'IDFNAME'=>$fname,
@@ -513,8 +514,8 @@ sub printStruct{
 
 		for my $class ( sort keys %$f4 ) {
 		    #print "\t\t\tFxn4: $class --> $f4->{$class}->{'count'}\n";
-		    $iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f4->{$class}->{'idList'});
-		    $xw->startTag('CLASS', 'LABEL'=>$class,
+		    $id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f4->{$class}->{'idList'});
+		    $xml_writer->startTag('CLASS', 'LABEL'=>$class,
 						'NAME'=>$class,
 						'VALUE'=>$f4->{$class}->{'count'},
 						'IDFNAME'=>$fname,
@@ -524,8 +525,8 @@ sub printStruct{
 
 		    for my $order ( sort keys %$f5 ) {
 			#print "\t\t\t\tFxn5: $order --> $f5->{$order}->{'count'}\n";
-			$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f5->{$order}->{'idList'});
-			$xw->startTag('ORDER', 'LABEL'=>$order,
+			$id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f5->{$order}->{'idList'});
+			$xml_writer->startTag('ORDER', 'LABEL'=>$order,
 						    'NAME'=>$order,
 						    'VALUE'=>$f5->{$order}->{'count'},
 						    'IDFNAME'=>$fname,
@@ -535,8 +536,8 @@ sub printStruct{
 
 			for my $family ( sort keys %$f6 ) {
 			    #print "\t\t\t\t\tFxn6: $family --> $f6->{$family}->{'count'}\n";
-			    $iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f6->{$family}->{'idList'});
-			    $xw->startTag('FAMILY', 'LABEL'=>$family,
+			    $id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f6->{$family}->{'idList'});
+			    $xml_writer->startTag('FAMILY', 'LABEL'=>$family,
 							'NAME'=>$family,
 							'VALUE'=>$f6->{$family}->{'count'},
 							'IDFNAME'=>$fname,
@@ -545,8 +546,8 @@ sub printStruct{
 			    my $f7 = $f6->{$family}->{'genus'};
 
 			    for my $genus ( sort keys %$f7 ) {
-				$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f7->{$genus}->{'idList'});
-				$xw->startTag('GENUS', 'LABEL'=>$genus,
+				$id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f7->{$genus}->{'idList'});
+				$xml_writer->startTag('GENUS', 'LABEL'=>$genus,
 							    'NAME'=>$genus,
 							    'VALUE'=>$f7->{$genus}->{'count'},
 							    'IDFNAME'=>$fname,
@@ -555,8 +556,8 @@ sub printStruct{
 				my $f8 = $f7->{$genus}->{'species'};
 
 				for my $species ( sort keys %$f8 ){
-				    $iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f8->{$species}->{'idList'});
-				    $xw->startTag('SPECIES', 'LABEL'=>$species,
+				    $id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f8->{$species}->{'idList'});
+				    $xml_writer->startTag('SPECIES', 'LABEL'=>$species,
 								'NAME'=>$species,
 								'VALUE'=>$f8->{$species}->{'count'},
 								'IDFNAME'=>$fname,
@@ -565,31 +566,29 @@ sub printStruct{
 				    my $f9 = $f8->{$species}->{'organism'};
 
 				    for my $organism ( sort keys %$f9 ){
-					$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$f9->{$organism}->{'idList'});
-					$xw->emptyTag('ORGANISM', 'LABEL'=>$organism,
+					$id_writer->emptyTag("TAG_".$tag, 'IDLIST'=>$f9->{$organism}->{'idList'});
+					$xml_writer->emptyTag('ORGANISM', 'LABEL'=>$organism,
 								    'NAME'=>$organism,
 								    'VALUE'=>$f9->{$organism}->{'count'},
 								    'IDFNAME'=>$fname,
 								    'TAG'=>'TAG_'.$tag++);
 				    }
-				    $xw->endTag('SPECIES');
+				    $xml_writer->endTag('SPECIES');
 				}
-				$xw->endTag('GENUS');
+				$xml_writer->endTag('GENUS');
 			    }
-			    $xw->endTag('FAMILY');
+			    $xml_writer->endTag('FAMILY');
 			}
-			$xw->endTag('ORDER');
+			$xml_writer->endTag('ORDER');
 		    }
-		    $xw->endTag('CLASS');
+		    $xml_writer->endTag('CLASS');
 		}
-		$xw->endTag('PHYLUM');
+		$xml_writer->endTag('PHYLUM');
 	    }
-	    $xw->endTag('KINGDOM');
+	    $xml_writer->endTag('KINGDOM');
 	}
-	$xw->endTag('DOMAIN');
+	$xml_writer->endTag('DOMAIN');
     }
-
-    return ($xw, $iw);
 }
 
 ###############################################################################

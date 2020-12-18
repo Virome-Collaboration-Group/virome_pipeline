@@ -110,15 +110,15 @@ my $rslt;
 
 $orf_sel->execute($libId);
 $rslt = $orf_sel->fetchall_arrayref({});
-binORFnREADs($rslt, $libId, "ORF");
+binORFnREADs(\$rslt, $libId, "ORF");
 
 $read_sel->execute($libId);
 $rslt = $read_sel->fetchall_arrayref({});
-binORFnREADs($rslt, $libId, "READ");
+binORFnREADs(\$rslt, $libId, "READ");
 
 $gc_sel->execute($libId);
 $rslt = $gc_sel->fetchall_arrayref({});
-binGC($rslt, $libId, "GC");
+binGC(\$rslt, $libId, "GC");
 
 $logger->info("Library histogram completed");
 
@@ -157,7 +157,7 @@ sub timer {
 
 ###############################################################################
 sub binORFnREADs {
-    my ($rslt, $lib, $type) = @_;
+    my ($rslt, $lib, $type) = shift, shift, shift;
 
     if (@{$rslt} > 0){
         my $lastIdx = 0 + @{$rslt} -1;
@@ -197,7 +197,7 @@ sub binORFnREADs {
 
 ###############################################################################
 sub binGC {
-    my ($rslt, $lib, $type) = @_;
+    my ($rslt, $lib, $type) = shift, shift, shift;
     if (@{$rslt} > 0){
         my $lastIdx = 0 + @{$rslt} -1;
 
@@ -236,7 +236,7 @@ sub binGC {
 
 ###############################################################################
 sub printXML {
-    my ($lib, $type, $arr) = @_;
+    my ($lib, $type, $arr) = shift, shift, shift;
 
     my $filename = $this->{output_dir} . "/".$type."_HISTOGRAM_".$lib.".xml";
 

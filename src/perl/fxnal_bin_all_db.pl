@@ -114,12 +114,18 @@ $id_writer->xmlDecl("UTF-8");
 $xml_writer->startTag("root");
 $id_writer->startTag("root");
 
-($xml_writer, $id_writer, $tag_num) = getNodeFor('ACLAME', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
-($xml_writer, $id_writer, $tag_num) = getNodeFor('COG', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
-($xml_writer, $id_writer, $tag_num) = getNodeFor('UNIREF100P', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
-($xml_writer, $id_writer, $tag_num) = getNodeFor('KEGG', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
-($xml_writer, $id_writer, $tag_num) = getNodeFor('SEED', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
-($xml_writer, $id_writer, $tag_num) = getNodeFor('PHGSEED', $libId, $xml_writer, $id_writer, $id_file, $tag_num);
+getNodeFor('ACLAME', $libId);
+$tag_num++;
+getNodeFor('COG', $libId);
+$tag_num++;
+getNodeFor('UNIREF100P', $libId);
+$tag_num++;
+getNodeFor('KEGG', $libId);
+$tag_num++;
+getNodeFor('SEED', $libId);
+$tag_num++;
+getNodeFor('PHGSEED', $libId);
+$tag_num++;
 
 $xml_writer->endTag("root");
 $id_writer->endTag("root");
@@ -164,28 +170,26 @@ sub timer {
 
 ###############################################################################
 sub getNodeFor {
-    my ($db, $lib, $xw, $iw, $fname, $tag) = @_;
+    my ($db, $lib) = @_;
 
     $blst_sel->execute($lib,$db);
     my $rslt = $blst_sel->fetchall_arrayref({});
 
     if (@{$rslt} > 0){
-	my $idList = '';
-	my $count = 0+@{$rslt};
+    	my $idList = '';
+    	my $count = 0+@{$rslt};
 
-	foreach my $row (@$rslt) {
-	    $idList .= $row->{sequenceId} . ",";
-	}
+    	foreach my $row (@$rslt) {
+    	    $idList .= $row->{sequenceId} . ",";
+    	}
 
-	$idList =~ s/,$//;
+    	$idList =~ s/,$//;
 
-	if ($db eq 'UNIREF100P'){
-	    $db = 'GO';
-	}
+    	if ($db eq 'UNIREF100P'){
+    	    $db = 'GO';
+    	}
 
-	$xw->emptyTag("CATEGORY", 'LABEL'=>$db, 'VALUE'=>$count, 'TAG'=>'TAG_'.$tag, 'IDFNAME'=>$fname);
-	$iw->emptyTag("TAG_".$tag, 'IDLIST'=>$idList);
+    	$xml_writer->emptyTag("CATEGORY", 'LABEL'=>$db, 'VALUE'=>$count, 'TAG'=>'TAG_'.$tag_num, 'IDFNAME'=>$id_file);
+    	$id_writer->emptyTag("TAG_".$tag_num, 'IDLIST'=>$idList);
     }
-
-    return $xw, $iw, $tag+1;
 }
