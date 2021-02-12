@@ -105,8 +105,6 @@ if( $options{'help'} ){
     pod2usage( {-exitval => 0, -verbose => 2, -output => \*STDERR} );
 }
 
-print "DEBUG VALUE: " .$options{debug}. "\n";
-
 ## make sure everything passed was peachy
 &check_parameters(\%options);
 
@@ -126,6 +124,9 @@ my $filename = fileparse($fasta, qr/\.[^.]*/);
 my $output_dir = "/opt/output/". $filename ."_". timestamp();
 
 print "DEBUG VALUE: " .$options{debug}. "\n";
+print "INPUT DIR: " .$options{input_dir}. "\n";
+print "OUTPUT DIR: " .$output_dir. "\n";
+print "Last Update on 02/12/2021\n";
 
 &create_output_dir($output_dir);
 

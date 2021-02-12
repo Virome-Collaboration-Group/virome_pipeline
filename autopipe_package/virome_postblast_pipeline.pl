@@ -131,6 +131,7 @@ my $output_dir = $options{input_dir}; #"/opt/output/". $filename ."_". timestamp
 print "DEBUG VALUE: " .$options{debug}. "\n";
 print "INPUT DIR: " .$options{input_dir}. "\n";
 print "OUTPUT DIR: " .$output_dir. "\n";
+print "Last Update on 02/12/2021\n";
 
 &create_output_dir($output_dir);
 
